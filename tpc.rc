@@ -1,0 +1,803 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Spanish (Castilian) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESP)
+#ifdef _WIN32
+LANGUAGE LANG_SPANISH, SUBLANG_SPANISH
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP3             BITMAP                  "res\\bitmap3.bmp"
+#endif    // Spanish (Castilian) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Spanish resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESN)
+#ifdef _WIN32
+LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
+IDB_BITMAP1             BITMAP                  "res\\bitmap1.bmp"
+IDB_BITMAP2             BITMAP                  "res\\bitmap2.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_TIEMPOORDEN DIALOG  0, 0, 314, 159
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Tiempos de busqueda asignación órdenes"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,257,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,257,24,50,14
+    EDITTEXT        IDC_PARTIDAORDEN,52,42,40,13,ES_AUTOHSCROLL
+    EDITTEXT        IDC_AUGMENTOTIEMPO,161,128,40,13,ES_AUTOHSCROLL | WS_DISABLED
+    CONTROL         "Slider1",IDC_SLIDER1,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,47,122,100,24
+    CONTROL         "Slider1",IDC_SLIDER2,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,47,79,100,24
+    GROUPBOX        "Aumento de tiempo ""radio"" por busqueda (Segundos)",IDC_STATIC,29,112,186,40
+    GROUPBOX        "Frecuencia de busqueda (Millisegundos)",IDC_STATIC,30,69,186,40
+    GROUPBOX        "Tiempo Inicial",IDC_STATIC,30,25,186,40
+    LTEXT           "Tiempo inicial (segundos) de radio de busqueda",IDC_STATIC,111,38,92,19
+    EDITTEXT        IDC_FRECUENCIAORDEN,161,86,40,13,ES_AUTOHSCROLL | WS_DISABLED
+END
+
+IDD_ABOUTBOX DIALOG  0, 0, 235, 55
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Acerca de tpc"
+FONT 8, "MS Sans Serif"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
+    LTEXT           "tpc Versión 1.0",IDC_STATIC,40,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2001 MAP Software y Sistemas para INDUMAT",IDC_STATIC,40,25,149,16
+    DEFPUSHBUTTON   "Aceptar",IDOK,178,7,50,14,WS_GROUP
+END
+
+IDR_MAINFRAME DIALOG  0, 0, 330, 15
+STYLE DS_SETFONT | WS_CHILD | WS_BORDER
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "Barra de diálogo",IDC_STATIC,1,3,52,8
+END
+
+IDD_TRACELEVEL DIALOG  0, 0, 186, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Nivel de mensajes de trace"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+    CONTROL         "Trace",IDC_TRACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,24,35,10
+    CONTROL         "Aviso",IDC_AVISO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,33,33,10
+    CONTROL         "Warning",IDC_WARNING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,42,43,10
+    CONTROL         "Error",IDC_ERROR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,51,31,10
+    CONTROL         "Fatal",IDC_FATAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,60,31,10
+    CONTROL         "Trace",IDC_TRACE2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,72,24,35,10
+    CONTROL         "Aviso",IDC_AVISO2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,72,33,33,10
+    CONTROL         "Warning",IDC_WARNING2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,72,42,43,10
+    CONTROL         "Error",IDC_ERROR2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,72,51,31,10
+    CONTROL         "Fatal",IDC_FATAL2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,72,60,31,10
+    LTEXT           "Pantalla",IDC_STATIC,16,12,26,8
+    LTEXT           "Fichero",IDC_STATIC,69,13,24,8
+END
+
+IDD_TESTSR DIALOG  0, 0, 186, 354
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Test Send/Receive"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+    EDITTEXT        IDC_TIPOTEL,68,34,21,14,ES_AUTOHSCROLL
+    LTEXT           "Tipo Telegrama",IDC_STATIC,10,36,50,8
+    EDITTEXT        IDC_EDIT1,69,53,20,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_EDIT2,69,69,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT3,69,85,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT4,69,101,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT5,69,117,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT6,69,133,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT7,69,149,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT8,69,165,20,14,ES_AUTOHSCROLL
+    LTEXT           "Datos",IDC_STATIC,40,54,20,8
+    EDITTEXT        IDC_EDIT9,69,182,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT10,69,196,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT11,69,210,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT12,69,224,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT13,69,238,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT14,69,252,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT15,69,266,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT16,69,280,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT17,69,294,20,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT18,69,308,20,14,ES_AUTOHSCROLL
+    LTEXT           "Cargador",IDC_STATIC,33,186,30,8
+    LTEXT           "Pulmón A2",IDC_STATIC,30,323,35,8
+    EDITTEXT        IDC_EDIT19,69,322,20,14,ES_AUTOHSCROLL
+END
+
+IDD_TESTGETESTACION DIALOG  0, 0, 186, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Test GetEstacion"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+    EDITTEXT        IDC_PTOCOM,55,19,40,14,ES_AUTOHSCROLL
+    LTEXT           "Pto Com",IDC_STATIC,14,22,28,8
+    EDITTEXT        IDC_POSICION,55,34,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LADO,55,48,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Posición",IDC_STATIC,13,38,28,8
+    LTEXT           "Lado",IDC_STATIC,14,52,17,8
+    EDITTEXT        IDC_CODCLIND,55,67,40,14,ES_AUTOHSCROLL
+    LTEXT           "CodClIND",IDC_STATIC,13,69,32,8
+END
+
+IDD_SELECT_AGV_HISTORY DIALOG  0, 0, 186, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Select an AGV for History Dump"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+    EDITTEXT        IDC_EDIT_SELAGV,65,38,40,14,ES_AUTOHSCROLL
+    LTEXT           "Agv to Select:",IDC_STATIC,14,38,46,8
+END
+
+IDD_INSERTARAGVDLG DIALOG  0, 0, 186, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Insertar Agv on Communication Point"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,72,74,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,74,50,14
+    EDITTEXT        IDC_NUMAGVINS,48,24,20,14,ES_AUTOHSCROLL
+    LTEXT           "Agv:",IDC_STATIC,25,26,16,8
+    EDITTEXT        IDS_INSERTARAGVMP,48,46,25,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_POSINS,129,46,19,14,ES_AUTOHSCROLL
+    LTEXT           "Coms. Pt:",IDC_STATIC,10,50,31,8
+    LTEXT           "Position:",IDC_STATIC,95,50,28,8
+END
+
+IDD_CARGABAT DIALOG  0, 0, 284, 178
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Solicitar Carga de Bateria"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,227,157,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,171,157,50,14
+    EDITTEXT        IDC_NUMAGV,54,32,24,14,ES_AUTOHSCROLL
+    LTEXT           "Agv:",IDC_STATIC,18,35,16,8
+    CONTROL         "Cargar / Quitar Carga",IDC_CARGARCHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,54,52,83,10
+    CONTROL         "C1-53",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON | WS_GROUP,169,76,35,10
+    CONTROL         "C2-54",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,217,76,35,10
+    CONTROL         "C3-55",IDC_RADIO3,"Button",BS_AUTORADIOBUTTON,169,52,35,10
+    CONTROL         "C4-56",IDC_RADIO4,"Button",BS_AUTORADIOBUTTON,217,52,35,10
+    CONTROL         "C5-57",IDC_RADIO5,"Button",BS_AUTORADIOBUTTON,23,122,35,10
+    CONTROL         "C6-58",IDC_RADIO6,"Button",BS_AUTORADIOBUTTON,59,122,35,10
+    CONTROL         "C7-59",IDC_RADIO7,"Button",BS_AUTORADIOBUTTON,96,122,35,10
+    CONTROL         "C8-60",IDC_RADIO8,"Button",BS_AUTORADIOBUTTON,133,122,35,10
+END
+
+IDD_TESTGENORD DIALOG  0, 0, 186, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Test Generación Ordenes"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+    EDITTEXT        IDC_CODEST,41,34,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TIPEST,41,62,40,14,ES_AUTOHSCROLL
+    LTEXT           "Codest:",IDC_STATIC,7,36,25,8
+    LTEXT           "Tipo",IDC_STATIC,15,64,15,8
+END
+
+IDD_TIMEDLG DIALOG  0, 0, 186, 95
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,129,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,129,24,50,14
+    CONTROL         "DateTimePicker1",IDC_TIMEPICKER,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP | 0x8,124,52,48,15
+    CONTROL         "DateTimePicker2",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_LONGDATEFORMAT | WS_TABSTOP,16,52,100,15
+    CONTROL         "Arranque Automático",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,16,32,82,10
+END
+
+IDD_FTF_HISTORY DIALOG  0, 0, 274, 175
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Write History Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,217,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,217,24,50,14
+    LISTBOX         IDC_LIST_FTFOHNEHIST,30,19,48,40,LBS_SORT | LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_LIST_FTFMITHIST,143,19,48,40,LBS_SORT | LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Situations",IDC_STATIC,29,80,96,57
+    CONTROL         "Crash",IDC_HIST_KOLLISION,"Button",BS_AUTORADIOBUTTON,45,97,34,10
+    CONTROL         "Deadlock",IDC_HIST_DEADLOCK,"Button",BS_AUTORADIOBUTTON,45,107,47,10
+    CONTROL         "No special reason",IDC_HIST_ALLGEM,"Button",BS_AUTORADIOBUTTON,45,117,73,10
+    PUSHBUTTON      ">",IDC_FTF_ZU_HIST,86,22,50,14
+    PUSHBUTTON      "<",IDC_FTF_NO_HIST,86,42,50,14
+    LTEXT           "Agv not included",IDC_STATIC,32,11,54,8
+    LTEXT           "Agv included",IDC_STATIC,145,11,42,8
+END
+
+IDD_DIALOG_STOP_PLC DIALOG  0, 0, 152, 62
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,95,41,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,29,41,50,14
+    LTEXT           "Parar proceso de comunicacion con el PLC?",IDC_STATIC,17,16,121,18
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_TIEMPOORDEN, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 307
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 152
+    END
+
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 48
+    END
+
+    IDD_TRACELEVEL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_TESTSR, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 347
+    END
+
+    IDD_TESTGETESTACION, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_SELECT_AGV_HISTORY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_INSERTARAGVDLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_CARGABAT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 277
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 171
+    END
+
+    IDD_TESTGENORD, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_TIMEDLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 179
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_FTF_HISTORY, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 267
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 168
+    END
+
+    IDD_DIALOG_STOP_PLC, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 145
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESP)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 10, 3\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\tpc.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""l.esp\\afxres.rc""          // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\tpc.ico"
+IDR_TPCTYPE             ICON                    "res\\tpcDoc.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_MAINFRAME TOOLBAR  16, 15
+BEGIN
+    BUTTON      ID_FILE_NEW
+    BUTTON      ID_FILE_OPEN
+    BUTTON      ID_EDIT_CUT
+    BUTTON      ID_EDIT_COPY
+    SEPARATOR
+    BUTTON      ID_EDIT_PASTE
+    SEPARATOR
+    BUTTON      ID_FILE_PRINT
+    SEPARATOR
+    BUTTON      ID_VIEW_LARGEICON
+    BUTTON      ID_VIEW_SMALLICON
+    BUTTON      ID_VIEW_LIST
+    BUTTON      ID_VIEW_DETAILS
+    SEPARATOR
+    BUTTON      ID_APP_ABOUT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINFRAME MENU 
+BEGIN
+    POPUP "&Archivo"
+    BEGIN
+        MENUITEM "&Nuevo\tCtrl+N",              ID_FILE_NEW, INACTIVE
+        MENUITEM "&Abrir...\tCtrl+A",           ID_FILE_OPEN
+        MENUITEM SEPARATOR
+        MENUITEM "&Salir",                      ID_APP_EXIT
+    END
+    POPUP "&Editar"
+    BEGIN
+        MENUITEM "&Deshacer\tCtrl+Z",           ID_EDIT_UNDO
+        MENUITEM SEPARATOR
+        MENUITEM "Cor&tar\tCtrl+X",             ID_EDIT_CUT
+        MENUITEM "&Copiar\tCtrl+C",             ID_EDIT_COPY
+        MENUITEM "&Pegar\tCtrl+V",              ID_EDIT_PASTE
+    END
+    POPUP "&Ver"
+    BEGIN
+        MENUITEM "Barra de &herramientas",      ID_VIEW_TOOLBAR
+        MENUITEM "Barra de &estado",            ID_VIEW_STATUS_BAR
+        MENUITEM SEPARATOR
+    END
+    POPUP "Herramientas"
+    BEGIN
+        MENUITEM "&Filtro Trace",               ID_VER_FILTROTRACE
+        MENUITEM "Scroll &Lista Mensajes",      ID_SCROLL_LIST, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "Test &Estación",              IDD_TESTESTACION
+        MENUITEM "&Test Enviar Estado al PLC",  IDD_TESTSR
+        MENUITEM "Solicitar Datos PLC",         IDD_TESTSR_Q
+        MENUITEM SEPARATOR
+        MENUITEM "&Simulate Communication",     ID_SIMULATECOM, CHECKED
+        MENUITEM "Auto &Generate Orders",       ID_GENERATESIMORDERS, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "Insertar Agv...",             IDS_INSERTARAGV
+        MENUITEM "&Cargar / Sacar Agv de Carga", IDS_CARGABAT
+        MENUITEM "Test Gen Ordenes",            ID_HERRAMIENTAS_TESTGENORDENES
+        MENUITEM SEPARATOR
+        MENUITEM "&Write AGV History",          ID_WRITEAGVHISTORY
+        MENUITEM "Read SitStop/Go Files",       IDS_READSITSTOP
+        MENUITEM "Parar thread PLC",            IDD_TEST_STOP_PLC_COMS
+        MENUITEM SEPARATOR
+        MENUITEM "Control Auto. &Tráfico",      IDD_AUTOTRAFFICCONTROL
+        MENUITEM SEPARATOR
+        MENUITEM "Guardar Posiciones AGVs",     ID_HERRAMIENTAS_GUARDARPOSICIONESAGVS
+    END
+    POPUP "Opciones"
+    BEGIN
+        MENUITEM "&Tiempos Asignación Órdenes", ID_TIEMPOORDEN
+    END
+    POPUP "Ay&uda"
+    BEGIN
+        MENUITEM "&Acerca de tpc...",           ID_APP_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS 
+BEGIN
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL, NOINVERT
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT, NOINVERT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT, NOINVERT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY, NOINVERT
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT, NOINVERT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT, NOINVERT
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL, NOINVERT
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "0c0a04b0"
+        BEGIN
+            VALUE "FileDescription", "Aplicación MFC tpc"
+            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "InternalName", "tpc"
+            VALUE "LegalCopyright", "Copyright (C) 2001"
+            VALUE "OriginalFilename", "tpc.EXE"
+            VALUE "ProductName", "Aplicación tpc"
+            VALUE "ProductVersion", "1, 0, 0, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0xc0a, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDR_MAINFRAME           "tpc\n\nTpc\n\n\nTpc.Document\nTpc Document"
+    IDD_TESTSR              "Enviar telegramas de Siemens SR"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_APP_TITLE       "tpc"
+    AFX_IDS_IDLEMESSAGE     "Preparado"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "MAY"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "DESP"
+    ID_INDICATOR_OVR        "SOB"
+    ID_INDICATOR_REC        "GRB"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_FILE_NEW             "Crea un nuevo documento\nNuevo"
+    ID_FILE_OPEN            "Abre un documento ya existente\nAbrir"
+    ID_FILE_CLOSE           "Cierra el documento activo\nCerrar"
+    ID_FILE_SAVE            "Guarda el documento activo\nGuardar"
+    ID_FILE_SAVE_AS         "Guarda el documento activo con un nuevo nombre\nGuardar como"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_APP_ABOUT            "Muestra información del programa, número de versión y copyright\nAcerca de"
+    ID_APP_EXIT             "Sale de la aplicación; le pide que guarde los documentos\nSalir"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_FILE_MRU_FILE1       "Abre este documento"
+    ID_FILE_MRU_FILE2       "Abre este documento"
+    ID_FILE_MRU_FILE3       "Abre este documento"
+    ID_FILE_MRU_FILE4       "Abre este documento"
+    ID_FILE_MRU_FILE5       "Abre este documento"
+    ID_FILE_MRU_FILE6       "Abre este documento"
+    ID_FILE_MRU_FILE7       "Abre este documento"
+    ID_FILE_MRU_FILE8       "Abre este documento"
+    ID_FILE_MRU_FILE9       "Abre este documento"
+    ID_FILE_MRU_FILE10      "Abre este documento"
+    ID_FILE_MRU_FILE11      "Abre este documento"
+    ID_FILE_MRU_FILE12      "Abre este documento"
+    ID_FILE_MRU_FILE13      "Abre este documento"
+    ID_FILE_MRU_FILE14      "Abre este documento"
+    ID_FILE_MRU_FILE15      "Abre este documento"
+    ID_FILE_MRU_FILE16      "Abre este documento"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_NEXT_PANE            "Cambia a la siguiente sección de ventana\nSiguiente sección"
+    ID_PREV_PANE            "Vuelve a la sección de ventana anterior\nSección anterior"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_WINDOW_SPLIT         "Divide la ventana activa en secciones\nDividir"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_EDIT_CLEAR           "Borra la selección\nBorrar"
+    ID_EDIT_CLEAR_ALL       "Borra todo\nBorrar todo"
+    ID_EDIT_COPY            "Copia la selección y la coloca en el portapapeles\nCopiar"
+    ID_EDIT_CUT             "Corta la selección y la coloca en el portapapeles\nCortar"
+    ID_EDIT_FIND            "Buscaa el texto especificado\nBuscar"
+    ID_EDIT_PASTE           "Inserta el contenido del portapapeles\nPegar"
+    ID_EDIT_REPEAT          "Repite la última acción\nRepetir"
+    ID_EDIT_REPLACE         "Reemplaza texto específico por otro texto\nReemplazar"
+    ID_EDIT_SELECT_ALL      "Selecciona todo el documento\nSeleccionar todo"
+    ID_EDIT_UNDO            "Deshace la última acción\nDeshacer"
+    ID_EDIT_REDO            "Rehace la acción que acaba de deshacerse\nRehacer"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_TOOLBAR         "Muestra u oculta la barra de herramientas\nAlternar Barra de herramientas"
+    ID_VIEW_STATUS_BAR      "Muestra u oculta la barra de estado\nAlternar Barra de estado"
+    ID_VIEW_AUTOARRANGE     "Ordenar iconos en una cuadrícula."
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_SCSIZE          "Cambia el tamaño de la ventana"
+    AFX_IDS_SCMOVE          "Cambia la posición de la ventana"
+    AFX_IDS_SCMINIMIZE      "Reduce la ventana a un icono"
+    AFX_IDS_SCMAXIMIZE      "Agranda la ventana al tamaño completo"
+    AFX_IDS_SCNEXTWINDOW    "Cambia a la ventana del siguiente documento"
+    AFX_IDS_SCPREVWINDOW    "Cambia a la ventana del documento anterior"
+    AFX_IDS_SCCLOSE         "Cierra la ventana activa y le pide que guarde los documentos"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_SCRESTORE       "Restaura la ventana a su tamaño normal"
+    AFX_IDS_SCTASKLIST      "Activa la lista de tareas"
+    IDS_MSGTIME             "Hora"
+    IDS_MSGMODULE           "Modulo"
+    IDS_MSGMESSAGE          "Texto Mensaje"
+    IDS_MSGFILE             "Fichero"
+    IDS_MSGLINE             "Línea"
+    IDS_MSGTYPE             "Tipo"
+    IDS_FILEPATH            "\\hdr_es\\anlag_sw\\tab"
+    IDS_BLOCKNUMBERERROR    """No ha datos suficiente de distances en el fichero de blocking"""
+    IDS_BLOCKDISTANCEERROR  "%d.Distancia blocking %d.Distancia, pero no al reves !"
+    IDS_NOORDBORRAR         "Orden <%1> no encontrado para borrar"
+    IDS_NOORDMODIFICAR      "Orden <%1> no encontrado para modificar"
+    IDS_NOLOGPATHSET        "El directorio del fichero log está sin definir en el registro. Se define como .\\"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_SMALLICON       "Mostrar elementos usando iconos pequeños.\nIconos pequeños"
+    ID_VIEW_LARGEICON       "Mostrar elementos usando iconos grandes.\nIconos grandes"
+    ID_VIEW_LIST            "Mostrar elementos en una lista.\nLista"
+    ID_VIEW_DETAILS         "Muestra información acerca de cada elemento en la ventana.\nDetails"
+    ID_VIEW_LINEUP          "Ordena iconos en una cuadrícula."
+    ID_VIEW_BYNAME          "Ordena los iconos en orden alfabético."
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VER_TESTMENSAJES     "Enviar 1000 mensajes a la lista"
+    ID_VER_CARGARDATOS      "Cargar los datos de la aplicación"
+    ID_VER_TESTTHREAD       "Arrancar un thread"
+    ID_VER_ARRANCARCOMFTS   "Arrancar las comunicaciones con los AGVs"
+    ID_VER_FILTROTRACE      "Modificar Filtro de Mensajes de Debug/Trace\nFiltro Trace"
+    ID_VER_TESTESTACIN      "Probar estación"
+    IDD_TESTSR_Q            "Enviar telegrama Q al PLC para solicitar datos"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_COMPORTERROR        "Imposible abrir el puerto de comunicaciones %1. Last Error %2.\nLa aplicación se cerrará."
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_COMPREFIX           "COM"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_READERROR           "Error reading socket"
+    IDS_SENDERROR           "Error sending on socket"
+END
+
+STRINGTABLE 
+BEGIN
+    IDP_SOCKETS_INIT_FAILED "Error al inicializar zócalos de Windows."
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_NOAGVCOMPORTSET     "El puerto de comunicaciones está sin definir en el registro. Se define como Puerto 1."
+    IDS_NOORACLEUSER        "El usuario de oracle no está definido en el registro. Se define como: hdr/hdr"
+    IDS_NOAGVHISTORY        "AGV %d does't exist; no history was written"
+    IDS_ERROR_AGVHIST       "Cannot write to the AGV history file !"
+    ID_SIMULATECOM          "Simulate Movimientos\nSimulate Communication with Agvs"
+    ID_GENERATESIMORDERS    "Auto Order Generation\nGenerate simulation orders automatically"
+    IDS_INSERTARAGV         "Insertar Agv\nInsertar an Agv on a specified Communication Point"
+    IDS_INSERTARAGVMP       "Communication Point\nCommunication Point where Agv should be inserted in the system"
+    IDS_CARGARBAT           "Enviar Agv a Carga Bateria...\nEnviar o Sacar un Agv de la carga de bateria"
+    IDS_FILE_SITUATION_FV   "SitStop.txt"
+    IDS_ASITUATION          "ASit = { %d, %d, %d, %d, %d, %d, %d, %d }"
+    IDS_VSITUATION          "VSit = { %d, %d, %d, %d, %d, %d, %d, %d }"
+    IDS_CARGADOROCUPADO     "El cargador del punto de comunicación %d está ocupado por otro Agv. No se puede enviar este."
+    IDS_NOCARGADOR          "No se ha especificado ningun cargador"
+    IDS_AGVNOTFOUND         "No se ha encontrado el Agv especificado"
+    IDS_ERRSIEMENSSR        "%s rb_r: %s (%d). "
+END
+
+STRINGTABLE 
+BEGIN
+    ID_TIEMPOORDEN          "Tiempos para Asignación\nEspecificar tiempos para la asignación de órdenes a Agvs"
+    IDS_FILE_SITUATION_FE   "SitGo.txt"
+    IDS_AGV_WITHOUT_MP      "El Agv %d tiene punto de comunicación sin definir"
+    IDS_AGV_WITH_EMPTY_CRASH_PROTECT_AREA 
+                            "Agv %d no tiene crash protect area definido (Quitar del Sistema o provocar comunicación con el TPC)"
+    IDS_CLOSE_WARNING       "Al cerrar el TPC, los Agvs se pararán en sus posiciones actuales. Desea realmente cerrar la aplicación del TPC ?"
+    ID_SCROLL_LIST          "Scoll lista de mensajas\nScroll lista"
+    IDS_SIEMENS_FATAL       "Error fatal de comunicaciones con el PLC de Siemens. El TPC se parará. Se debe revisar la comunicación con el PLC antes de rearrancar."
+    IDS_NOHISTFILEPATHSET   "El directorio del fichero histórico de Agvs está sin definir en el registro. Se define como .\\"
+    IDS_CANNOT_OPEN_BIN_BLOCKFILE "Cannot open binary block file \n%s "
+    IDS_BLOCKNUMBER_ERROR   "Block table has to %d distances, but only %d are expected!"
+    IDS_ERROR_READ_BLOCKTABLE_INDEX_VECTOR 
+                            "Error while reading index vector from block file!"
+    IDS_ERROR_READ_BLOCKTABLE_CRASH_DISTANCES 
+                            "Error while reading block table for %d.distance, %d.crash distance. "
+END
+
+STRINGTABLE 
+BEGIN
+    IDD_TEST_STOP_PLC_COMS  "Forzar parada del thread de comunicaciones con el PLC"
+    IDD_AUTOTRAFFICCONTROL  "Activar / Desactivar Control Tráfico Automático (Nuevo 2010)"
+    ID_HERRAMIENTAS_GUARDARPOSICIONESAGVS 
+                            "Guardar las posiciones actuales de los AGVs"
+END
+
+#endif    // Spanish resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESP)
+#ifdef _WIN32
+LANGUAGE 10, 3
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\tpc.rc2"  // non-Microsoft Visual C++ edited resources
+//#include "l.esp\afxres.rc"          // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

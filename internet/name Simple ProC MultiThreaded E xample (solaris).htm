@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0068)http://dco-proxima.dco.pima.edu/oracle/coderep/cat00017/smpl0037.htm -->
+<HTML><HEAD><TITLE>name: Simple Pro*C MultiThreaded E xample (solaris)</TITLE>
+<META content="text/html; charset=windows-1252" http-equiv=Content-Type>
+<META content="MSHTML 5.00.2920.0" name=GENERATOR></HEAD>
+<BODY bgColor=#ffffff text=#000000>
+<CENTER>
+<H2>Sample Code Repository<BR>Name: Simple Pro*C MultiThreaded E xample 
+(solaris)</H2></CENTER>
+<HR>
+<STRONG>Description:</STRONG><BR><BR>Example code for Solaris Threads where 
+Context is allocated and used within the Thread. (No 
+Mutex's).<BR><BR><STRONG>Source Code:</STRONG> <PRE>/*    This example uses separate threads with separate contexts, each doing it's own
+ *     connect, work and disconnect.
+ *     Note:  This program does not need Mutex's
+ *            The context is allocated and used after the thread has been spawned
+ *               instead of before.
+ *            The program was written for Solaris Threads.
+ */
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;thread.h&gt;
+EXEC SQL INCLUDE SQLCA;
+
+void *tablethread();
+void syserr(char *msgtext);
+void sqlerror(sql_context ctx, struct sqlca sqlca);
+
+#define MAXTHREADS 10
+
+extern int errno;
+
+void main(void)
+{
+
+	int i;
+	thread_t threadid[MAXTHREADS];
+
+	EXEC SQL ENABLE THREADS;
+
+	for (i=0; i&lt;MAXTHREADS; i++)
+	{
+		/* Set the thread going. */
+		if (thr_create(NULL, NULL, tablethread, NULL, NULL, &amp;threadid[i]) == -1) syserr("thr_create");
+		printf("Thread %d started\n", threadid[i]);
+	}
+
+	for (i=0; i&lt;MAXTHREADS; i++)
+	{
+		if (thr_join(threadid[i], NULL, NULL) == -1) syserr("thr_join");
+		printf("Thread %d joined\n", threadid[i]);
+	}
+
+	exit(0);
+
+}
+
+void *tablethread()
+{
+	struct sqlca 	sqlca;
+	sql_context 	ctx;
+	char			username[20] = "SCOTT";
+	char			password[20] = "TIGER";
+
+	EXEC SQL WHENEVER SQLERROR DO sqlerror(ctx, sqlca);
+	EXEC SQL CONTEXT ALLOCATE :ctx;
+	EXEC SQL CONTEXT USE :ctx;
+	EXEC SQL CONNECT :username IDENTIFIED BY :password;
+
+	printf("In Thread\n"); fflush(stdout);
+
+	EXEC SQL insert into emp
+	values(9999, 'ELLISON', 'Superstar', 1, '08-JUL-97', 99999.99, 0, 1);	
+
+	EXEC SQL COMMIT WORK;
+
+	EXEC SQL CONTEXT FREE :ctx;
+
+	printf("Exiting thread\n");
+
+	thr_exit(0);
+}
+
+
+void syserr(char *msgtext)
+{
+	extern char *sys_errlist[];
+	fprintf(stderr, "ERROR in threads: %s (%d; %s)\n", msgtext, errno, sys_errlist[errno]);
+	exit(1);
+}
+
+void sqlerror(sql_context ctx, struct sqlca sqlca)
+{
+	/* Handles unrecoverable Oracle errors */
+
+	char sqlmess[512];
+	int stmlen, sqlfc;
+
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    fprintf(stderr, "\nORACLE error detected:\n");fflush stdout;
+    fprintf(stderr, "\n% .70s \n\n", sqlca.sqlerrm.sqlerrmc);
+
+	stmlen = 512;
+	sqlglst(ctx, sqlmess, &amp;stmlen, &amp;sqlfc);
+	if (stmlen != 0)
+	{
+		fprintf(stderr, "SQL statement that error occured on:\n\n%.*s\n\n", stmlen, sqlmess);
+	}
+	else
+	{
+		fprintf(stderr, "The sqlgls function returned an error, so the SQL statement could not be printed.\n");
+	}
+
+    EXEC SQL ROLLBACK WORK RELEASE;
+
+	fflush(stderr);
+    exit(1);
+}</PRE></BODY></HTML>

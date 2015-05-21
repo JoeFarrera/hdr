@@ -1,0 +1,1651 @@
+// DBEstacion.cpp: implementation of the CDBEstacion class.
+//
+//////////////////////////////////////////////////////////////////////
+
+
+#include "stdafx.h"
+#include "tpc.h"
+#include "DBEstacion.h"
+#include "Agv.h"
+#include "GestorOrden.h"
+#include "GestorAgv.h"
+#include "PuntoDescanso.h"
+#include "DBEstadistica.h"
+
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+// The ORACA=YES option must be specified to enable use of the ORACA
+EXEC ORACLE OPTION (ORACA=YES);
+
+// Variables Oracle
+typedef char asciz[80];
+EXEC SQL TYPE asciz IS STRING(80) REFERENCE;
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+
+// Cambiar si TEstAgv cambia
+struct dbEstAgv
+{
+ char codclind [8];
+ int ptocom;       
+ int posicion;     
+ char lado [2];    
+ int levelest;     
+ char prepal [2];  
+ char mesaop [2];  
+ int errmesa;      
+ char finprod [2]; 
+ char tipest [2];  
+ char codestpul [8];
+};
+
+// Cambiar si TEstAgv cambia
+struct idbEstAgv
+{
+ short codclind;
+ short ptocom;       
+ short posicion;     
+ short lado;    
+ short levelest;     
+ short prepal;  
+ short mesaop;  
+ short errmesa;      
+ short finprod; 
+ short tipest;  
+ short codestpul;
+};
+
+
+
+// Cambiar si TEstacion cambia
+struct dbEstacion
+{
+			char codestpul [7 + 1];
+            char descrip [40 + 1];
+            char tipestpul [1 + 1];
+            char senper [1 + 1];
+            char tipmesa [1 + 1];
+            char tippal [1 + 1];
+            char tippalenv [1 + 1];
+            int cappul;
+            int puncriped;
+            char codtren [3 + 1];
+            char estest [1 + 1];
+            char estpul [1 + 1];
+            char codart [10 + 1];
+            int palped; 
+            char finsum [1 + 1];
+            char sumcon [1 + 1];
+            char codpullno [7 + 1];
+            char evacuar [1 + 1];
+		    char automan [1 + 1];
+            char intcamb [1 + 1];
+            int ocupul;
+            char senact [1 + 1];
+            int palsum;
+            int resagv;
+            char senagv [1 + 1];
+            int palpedrad;
+
+};
+struct idbEstacion
+{
+		short codestpul;
+        short descrip;
+        short tipestpul;
+        short senper;
+        short tipmesa;
+        short tippal;
+        short tippalenv;
+        short cappul;
+        short puncriped;
+        short codtren;
+        short estest;
+        short estpul;
+        short codart;
+        short palped; 
+        short finsum;
+        short sumcon;
+        short codpullno;
+        short evacuar;
+		short automan;
+        short shortcamb;
+        short ocupul;
+        short senact;
+        short palsum;
+        short resagv;
+        short senagv;
+        short palpedrad;
+};
+
+struct dbAsigPulVac
+{
+ char codpulvac [8];
+};
+struct idbAsigPulVac
+{
+		short codpulvac;
+};
+
+
+// struct dbEstAgv * ptrDBEstAgv;
+// struct dbEstacion * ptrDBEstacion;
+// struct idbEstacion * ptriDBEstacion;
+EXEC SQL END DECLARE SECTION;
+
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CDBEstacion::CDBEstacion()
+{
+	m_EstadoMesa2 = 0;
+	m_EstadoMesa1 = 0;
+	m_EstadoEstacion = 0;
+	m_CapPulmon = 0;
+	m_OcuPulmon = 0;
+	// Afegit xavi, 09/06/05: Nous camps que apareixeran en el missatge del bub
+
+	// Fi afegit xavi, 09/06/05: Nous camps que apareixeran en el missatge del bub
+	m_pEstAgv1 = NULL;
+	m_pEstAgv2 = NULL;
+	m_pEstacion = NULL;
+	m_fGotDatos = false;
+	oraca.orastxtf = ORASTFERR;
+
+}
+
+CDBEstacion::~CDBEstacion()
+{
+	if (m_pEstAgv1)
+		delete m_pEstAgv1;
+	if (m_pEstAgv2)
+		delete m_pEstAgv2;
+	if (m_pEstacion)
+		delete m_pEstacion;
+}
+
+void CDBEstacion::InsertarEstacion(UINT index)
+{
+	if (! g_Container.m_dbutil.IsConnected ())
+		{
+		MSGWARNING ("InsertarEstacion ()-> No hay conexión a Oracle");
+		return;
+		}
+		
+	int pos;
+	CString strCodest;
+	unsigned char tipEstIndumat;
+	char tipEstacion;	// E: Entrada S: Salida A: Entrada o Salida
+		// hay que descifrar la estación
+		for (pos = 0; pos < statdat [index].pos_anz_l; pos++)
+		{
+			strCodest = (LPTSTR)&kn_tab [statdat [index].ziel_index_l + pos];
+			tipEstIndumat = e_typ_tab[z_typ_tab[zt_ver_tab[statdat [index].zieltyp_l]].index].ziel_art;
+
+			if (tipEstIndumat & (HOL + BRI))
+				tipEstacion = 'A';
+			else if (tipEstIndumat & HOL)
+				tipEstacion = 'S';
+			else if (tipEstIndumat & BRI)
+				tipEstacion = 'E';
+			else tipEstacion  = 'N';	// No es una estación de interface ...
+
+			if (statdat [index].pos_anz_l > 1)
+			{
+				int ind = strCodest.ReverseFind ('.');
+				if (ind != -1)
+					strCodest = strCodest.Left (ind);
+			}
+
+			if (tipEstacion != 'N')
+				InsertOrUpdateEstacionAgv (index,
+								statdat [index].mp,
+								pos + 1,
+								'L',
+								(LPCTSTR)strCodest,
+								(LPTSTR)&kn_tab [statdat [index].ziel_index_l + pos]);
+		}
+		for (pos = 0; pos < statdat [index].pos_anz_r; pos++)
+		{
+			strCodest = (LPTSTR)&kn_tab [statdat [index].ziel_index_r + pos];
+			tipEstIndumat = e_typ_tab[z_typ_tab[zt_ver_tab[statdat [index].zieltyp_r]].index].ziel_art;
+
+			if (tipEstIndumat & HOL + BRI)
+				tipEstacion = 'A';
+			else if (tipEstIndumat & HOL)
+				tipEstacion = 'S';
+			else if (tipEstIndumat & BRI)
+				tipEstacion = 'E';
+			else tipEstacion  = 'N';	// No es una estación de interface ...
+
+			if (statdat [index].pos_anz_r > 1)
+			{
+				int ind = strCodest.ReverseFind ('.');
+				if (ind != -1)
+					strCodest = strCodest.Left (ind);
+			}
+
+			if (tipEstacion != 'N')
+				InsertOrUpdateEstacionAgv (index,
+								statdat [index].mp,
+								pos + 1,
+								'R',
+								(LPCTSTR)strCodest,
+								(LPTSTR)&kn_tab [statdat [index].ziel_index_r + pos]);
+		}
+
+}
+
+void CDBEstacion::InsertOrUpdateEstacionAgv(int index,
+											int ptocom,
+											int posicion,
+											char lado,
+											LPCTSTR ptrCodest,
+											LPCTSTR ptrCodestInd)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	VARCHAR dbCodclind [8];
+	int dbPtocom;
+	int dbPosicion;
+	char dbLado;
+	VARCHAR dbCodestpul [8];
+
+
+	EXEC SQL END DECLARE SECTION;
+  
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("InsertOrUpdateEstacionAgv: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+	
+
+	CString strTemp = ptrCodest;
+	strTemp.TrimRight ();
+
+	strcpy ((char *)dbCodestpul.arr, (LPCTSTR)strTemp); 
+	dbCodestpul.len = strlen ((char *)dbCodestpul.arr);
+	dbPtocom = ptocom;
+	dbPosicion = posicion;
+	dbLado = lado;
+
+	strTemp = ptrCodestInd;
+	strTemp.TrimRight ();
+	strcpy ((char *)dbCodclind.arr, (LPCTSTR)strTemp); 
+	dbCodclind.len = strlen ((char *)dbCodclind.arr);
+
+
+
+	EXEC SQL EXECUTE
+	begin
+		declare
+		cursor curestagv is
+		select codclind
+		from estagv
+		where codclind = :dbCodclind;
+		begin
+			open curestagv;
+			fetch curestagv into :dbCodclind;
+		if (curestagv%notfound) then
+	       INSERT INTO ESTAGV
+            (CODCLIND
+            ,PTOCOM
+            ,POSICION
+            ,LADO
+            ,LEVELEST
+            ,PREPAL
+            ,MESAOP
+            ,ERRMESA
+            ,FINPROD
+            ,TIPEST
+            ,CODESTPUL)
+			values
+			(:dbCodclind,
+			:dbPtocom,
+			:dbPosicion,
+			:dbLado,
+			0,	-- level (no usado en HdR)
+			'N',	-- prepal
+			'S',	-- MesaOp
+			0,	-- ErrMesa
+			'N',	-- FinProd
+			'E',	-- TipEst
+			:dbCodestpul);
+
+		COMMIT;
+		end if;
+		close curestagv;
+		end;
+		end;
+		END-EXEC;
+
+}
+
+
+// Get datos de la estación AGV identificado por su posicion Indumat
+bool CDBEstacion::GetEstAgv(int ptocom, int posicion, int lado)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	if (! g_Container.m_dbutil.IsConnected ())
+		{
+		MSGWARNING ("GetEstAgv ()-> No hay conexión a Oracle");
+		return (false);
+		}
+		
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	struct idbEstacion * ptriDBEstacion;
+	struct dbEstAgv * ptrDBEstAgv;
+	struct idbEstAgv * ptriDBEstAgv;
+	struct dbEstacion * ptrDBEstacion;
+	struct idbAsigPulVac * ptriDBAsigPulVac;
+	struct dbAsigPulVac * ptrDBAsigPulVac;
+	int dbPtocom;
+	int dbPosicion;
+	char dbLado;
+
+
+	EXEC SQL END DECLARE SECTION;
+
+	ptrDBEstAgv = new struct dbEstAgv; 
+	ptrDBEstacion = new struct dbEstacion;
+	ptrDBAsigPulVac = new struct dbAsigPulVac;
+	
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("GetEstAgv: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO GetEstacionNotFound;
+
+	// Interesan las dos mesas....
+	/*
+	switch (posicion)
+	{
+		case 2:
+		case 4:
+			posicion = posicion - 1; // First !!!
+	}
+	*/
+	dbLado = lado;	// Michael Was: == 1 ? 'L' : 'R';
+	dbPtocom = ptocom;
+	dbPosicion = posicion;
+
+
+	// Si es doble, interesan las dos mesas
+	EXEC SQL DECLARE CURESTAGV CURSOR FOR
+		SELECT * FROM ESTAGV
+		WHERE CODESTPUL = 
+			(SELECT CODESTPUL
+			  FROM ESTAGV WHERE 
+			  PTOCOM = :dbPtocom
+			  AND POSICION = :dbPosicion
+			  AND LADO = :dbLado)
+		ORDER BY POSICION ASC;
+	
+	EXEC SQL DECLARE CURESTACION CURSOR FOR
+		SELECT * FROM VCONEST
+		WHERE CODESTPUL = :ptrDBEstAgv->codestpul;	  
+
+	EXEC SQL DECLARE CURPULVAC CURSOR FOR
+		SELECT CODPULVAC
+		FROM ASIGPULVAC
+		WHERE CODEST = :ptrDBEstAgv->codestpul;
+
+	EXEC SQL OPEN CURESTAGV;
+
+	EXEC SQL FETCH CURESTAGV INTO :ptrDBEstAgv;
+
+	m_pEstAgv1 = (TEstAgv *)ptrDBEstAgv;
+
+	ptriDBEstacion = new struct idbEstacion;
+	// Estacion
+	EXEC SQL OPEN CURESTACION;
+
+	EXEC SQL FETCH CURESTACION INTO :ptrDBEstacion:ptriDBEstacion;
+	m_tipMesa = 'D' == ptrDBEstacion->tipmesa [0] ? 2 : 1;
+
+	//Xavi,09/06/05: actualitzat desde cpp i comentat fins que no es demostri el contrari (agafat del PLC)
+	// Michael 14.12.2004 Actualiza cappul y ocupul TODO - ver que pasa cuando no se simula
+	// Michael 15.03.2012 Interested in PLC Values - not database values
+	// m_OcuPulmon = ptrDBEstacion->ocupul;
+	// m_CapPulmon = ptrDBEstacion->cappul;
+	// Michael 14.12.2004 fin
+	//Fi xavi, 09/06/05
+	
+	// Afegit xavi, 09/06/05: resta de camps a mostrar en l'estacio del bub
+	m_Automan = ptrDBEstacion->automan[0];
+	m_Senact = ptrDBEstacion->senact[0];
+	m_Resagv = ptrDBEstacion->resagv;
+	// Fi afegit xavi, 09/06/05
+
+	delete ptriDBEstacion;
+
+	EXEC SQL CLOSE CURESTACION;
+
+	m_pEstacion = (TEstacion *)ptrDBEstacion;
+
+	if (2 == m_tipMesa)
+		{
+		// Hay dos mesas
+		ptrDBEstAgv = new struct dbEstAgv; 
+		ptriDBEstAgv = new struct idbEstAgv;
+
+		EXEC SQL FETCH CURESTAGV INTO :ptrDBEstAgv:ptriDBEstAgv;
+		m_pEstAgv2 = (TEstAgv *)ptrDBEstAgv;
+		delete ptriDBEstAgv;
+
+		}
+	ptriDBAsigPulVac = new struct idbAsigPulVac;
+
+	m_fGotDatos = true;
+	
+	EXEC SQL WHENEVER NOTFOUND GOTO GetCodPulVacNotFound;
+
+	m_CodPulVac = "-";
+
+	EXEC SQL OPEN CURPULVAC;
+	
+	EXEC SQL FETCH CURPULVAC INTO :ptrDBAsigPulVac:ptriDBAsigPulVac;
+	if (ptrDBAsigPulVac->codpulvac != NULL)
+		m_CodPulVac = ptrDBAsigPulVac->codpulvac;
+
+	delete ptriDBAsigPulVac;
+
+	EXEC SQL CLOSE CURPULVAC;
+
+	EXEC SQL CLOSE CURESTAGV;
+
+	return (true);
+
+GetEstacionNotFound:
+
+	MSGERROR3 ("GetEstAgv ()-> ptocom: %d posicion: %d lado %d Not Found",
+					ptocom,
+					posicion,
+					lado);
+
+
+
+	return (false);
+
+GetCodPulVacNotFound:
+
+	return (true);
+
+
+}
+
+
+
+// Actualizar los datos de la estación avisado por el PLC
+void CDBEstacion::UpdateEstacionPLC(BYTE *bMensaje)
+{
+
+	int ptocom = bMensaje [1];
+	int posicion = (bMensaje [2] & 0xFE) >> 1;
+	int lado = bMensaje [2] & 0x01;
+
+	lado = lado == 0 ? 'R' : 'L';
+
+	m_EstadoMesa1 = bMensaje [3];
+	m_EstadoMesa2 = bMensaje [4];
+	m_EstadoEstacion = bMensaje [5];
+	
+
+
+// Michael 08.07.2013 
+	if (ptocom != 1)
+{
+
+
+	if (GetEstAgv (ptocom, posicion, lado))
+	{
+		
+		m_CapPulmon = bMensaje [6];
+		m_OcuPulmon = bMensaje [7];
+
+		UpdateEstacion ();
+
+		UpdateEstAgv (m_pEstAgv1);
+		if (2 == m_tipMesa)
+			UpdateEstAgv (m_pEstAgv2);
+
+		// Michael 21.01.2002 Realizado para cada estación / estAgv EXEC SQL COMMIT;
+
+		SetOrdenEstacion ();
+
+		// Michael 20.03.2002 Generar estadisticas de ocupación estación
+
+		InsertarHistOcuEst ();
+
+
+	}
+	// XXX Else not found the station !!!
+}	// Michael 08.07.2013
+
+}
+
+// Actualizar estacion del tren
+void CDBEstacion::UpdateEstacion()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	if (! g_Container.m_dbutil.IsConnected ())
+		{
+		MSGWARNING ("GetEstacion ()-> No hay conexión a Oracle");
+		return;
+		}
+
+	EXEC SQL BEGIN DECLARE SECTION;		
+
+	struct dbEstacion * ptrDBEstacion;
+
+	EXEC SQL END DECLARE SECTION;
+
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("UpdateEstacionTren: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO GetEstacionTrenNotFound;
+
+	bool fUpdateEst = false;
+	if (m_pEstacion->cappul != m_CapPulmon)
+		fUpdateEst = true;
+
+	//...Etc...
+
+	m_pEstacion->cappul = m_CapPulmon;	
+	// Michael: 21.11.2001 Puede ser ni entrada ni salida
+	if (ESTACIONENTRADA)
+		m_pEstacion->senact [0] = 'E';
+	else if (ESTACIONSALIDA)
+		m_pEstacion->senact [0] = 'S';
+	else
+		m_pEstacion->senact [0] = 'N';
+
+	m_pEstacion->ocupul = m_OcuPulmon;
+	// Michael 18.04.2002
+	if (m_pEstacion->ocupul > 99)
+		m_pEstacion->ocupul = 99;
+
+	m_pEstacion->automan [0] = ESTACIONAUTOMATICO ? 'A' : 'M';
+
+	ptrDBEstacion = (struct dbEstacion *)m_pEstacion;
+
+	EXEC SQL UPDATE CONEST
+		SET SENACT = :ptrDBEstacion->senact,
+			OCUPUL = :ptrDBEstacion->ocupul,
+			AUTOMAN = :ptrDBEstacion->automan
+		WHERE CODESTPUL = :ptrDBEstacion->codestpul;
+
+	// Michael 21.01.2002 Realizar el commit para evitar deadlocks...
+	EXEC SQL COMMIT;
+
+
+	if (g_Container.IsSincronizacion ())
+	{
+		// Solo al arranque ya que complica los forms de estaciones
+		EXEC SQL UPDATE ESTACION
+		SET CAPPUL = :ptrDBEstacion->cappul
+			WHERE CODESTPUL = :ptrDBEstacion->codestpul;
+		// Michael 21.01.2002 Realizar el commit para evitar deadlocks...
+		EXEC SQL COMMIT;
+	}
+
+
+	return;
+GetEstacionTrenNotFound:
+
+	MSGWARNING ("UpdateEstacion () -> Not Found");
+}
+
+
+// Devolver número de mesas que tiene la estación
+UINT CDBEstacion::GetNumeroMesas()
+{
+	if (m_fGotDatos)
+	{
+		return (m_tipMesa);
+	}
+	else
+		return (0);
+
+}
+
+
+// Devolver el cliente Indumat de la estación AGV
+LPCTSTR CDBEstacion::GetClIND()
+{
+	if (m_fGotDatos)
+	{
+		return (m_pEstAgv1->codclind);
+	}
+	else
+		return ("????");
+
+}
+
+
+void CDBEstacion::UpdateEstAgv(TEstAgv * ptrEstAgv)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	if (! g_Container.m_dbutil.IsConnected ())
+		{
+		MSGWARNING ("UpdateEstAgv ()-> No hay conexión a Oracle");
+		return;
+		}
+	
+	EXEC SQL BEGIN DECLARE SECTION;	
+		struct dbEstAgv * ptrDBEstAgv;
+	EXEC SQL END DECLARE SECTION;
+
+
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("UpdateEstAgv: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;	// Update doesn't do not found
+
+	//...Etc...
+
+	BYTE mesa;
+	if (ptrEstAgv == m_pEstAgv1)
+		mesa = m_EstadoMesa1;
+	else
+		mesa = m_EstadoMesa2;
+
+	ptrEstAgv->prepal [0] = PRESENCIAPALET (mesa) ?
+		'S' : 'N';
+	ptrEstAgv->mesaop [0] = MESAOPERATIVA (mesa) ?
+		'S' : 'N';
+	ptrEstAgv->errmesa = ERRORMESA (mesa);
+	if (ptrEstAgv->ptocom != 41)
+		// Para 41 finproducción es de pantalla
+		ptrEstAgv->finprod [0] = FINPRODUCCION (mesa) ?
+			'S' : 'N';
+
+			
+	ptrDBEstAgv = (struct dbEstAgv *)ptrEstAgv;
+
+	EXEC SQL UPDATE ESTAGV
+		SET PREPAL = :ptrDBEstAgv->prepal,
+			MESAOP = :ptrDBEstAgv->mesaop,
+			ERRMESA = :ptrDBEstAgv->errmesa,
+			FINPROD = :ptrDBEstAgv->finprod
+		WHERE CODCLIND = :ptrDBEstAgv->codclind;
+
+	// Michael 21.01.2002: Realizar el commit para evitar deadlocks...
+	
+	EXEC SQL COMMIT;
+
+
+	// Actualizar la representacion de la estacion para el BuB
+	g_Container.m_GestorEstBuB.SetEstacionBuB (
+		ptrEstAgv->ptocom,
+		ptrEstAgv->posicion,
+		ptrEstAgv->lado [0],
+		ERRORMESA (mesa) ? true : false,
+		PRESENCIAPALET (mesa) ? true : false);
+
+	return;
+
+
+}
+
+
+// Devolver el estado de la estacion
+bool CDBEstacion::SentidoDelante()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	if (m_fGotDatos)
+	{
+
+		bool fSentido = true;
+		fSentido = 'F' == m_pEstacion->senagv [0] ? true : false;
+		return (fSentido);
+	}
+	else
+	{
+		MSGERROR ("No hay datos de la estación");
+		return (true);
+	}
+
+}
+
+// Devolver código del pulmón
+LPCTSTR CDBEstacion::GetCodEstPul()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	if (m_fGotDatos)
+	{
+		return (m_pEstacion->codestpul);
+	}
+	else
+		return ("????");
+
+}
+
+// Get datos de la estación AGV identificado por su código de estación
+bool CDBEstacion::GetEstAgv(LPCTSTR codestpul)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+	
+	if (! g_Container.m_dbutil.IsConnected ())
+		{
+		MSGWARNING ("GetEstAgv (codestpul)-> No hay conexión a Oracle");
+		return (false);
+		}
+
+	EXEC SQL BEGIN DECLARE SECTION;	
+		struct dbEstAgv * ptrDBEstAgv;
+		struct dbEstacion * ptrDBEstacion;
+		struct idbEstacion * ptriDBEstacion;
+	EXEC SQL END DECLARE SECTION;
+		
+	ptrDBEstAgv = new struct dbEstAgv; 
+	ptrDBEstacion = new struct dbEstacion;
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("GetEstAgv (codestpul): ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO GetEstAgvCodEstNotFound;
+
+	strcpy (ptrDBEstacion->codestpul, codestpul);
+
+
+	EXEC SQL DECLARE CURESTAGVCODEST CURSOR FOR
+		SELECT * FROM ESTAGV
+		WHERE CODESTPUL = :ptrDBEstacion->codestpul
+		ORDER BY posicion asc;
+
+	EXEC SQL DECLARE CURESTACIONCODEST CURSOR FOR
+		SELECT * FROM VCONEST
+		WHERE CODESTPUL = :ptrDBEstacion->codestpul;
+
+
+	EXEC SQL OPEN CURESTAGVCODEST;
+
+	EXEC SQL FETCH CURESTAGVCODEST INTO :ptrDBEstAgv;
+
+	m_pEstAgv1 = (TEstAgv *)ptrDBEstAgv;
+
+	ptriDBEstacion = new struct idbEstacion;
+	// Estacion
+	EXEC SQL OPEN CURESTACIONCODEST;
+
+	EXEC SQL FETCH CURESTACIONCODEST INTO :ptrDBEstacion:ptriDBEstacion;
+	m_tipMesa = 'D' == ptrDBEstacion->tipmesa [0] ? 2 : 1;
+	//Xavi, 09/06/05: actualitzat de cpp i comentat fins que no es demostri el contrari (agafat del plc)
+	// Michael 14.12.2004 Actualiza cappul y ocupul TODO - ver que pasa cuando no se simula
+	m_OcuPulmon = ptrDBEstacion->ocupul;
+	m_CapPulmon = ptrDBEstacion->cappul;
+	// Michael 14.12.2004 fin
+	// Fi xavi, 09/06/05: actualitzat de cpp
+
+	delete ptriDBEstacion;
+
+	EXEC SQL CLOSE CURESTACIONCODEST;
+
+	m_pEstacion = (TEstacion *)ptrDBEstacion;
+
+	if (2 == m_tipMesa)
+		{
+		// Hay dos mesas
+		ptrDBEstAgv = new struct dbEstAgv; 
+
+		EXEC SQL FETCH CURESTAGVCODEST INTO :ptrDBEstAgv;
+		m_pEstAgv2 = (TEstAgv *)ptrDBEstAgv;
+
+		}
+
+	EXEC SQL CLOSE CURESTAGVCODEST;
+
+	m_fGotDatos = true;
+
+	return (true);
+
+GetEstAgvCodEstNotFound:
+
+	MSGERROR1 ("GetEstAgv ()-> %s Not Found",
+		codestpul);
+
+	return (false);
+
+
+
+}
+
+
+
+void CDBEstacion::UpdateCargadorPLC (BYTE * bMensaje)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	UINT nCargador;
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("UpdateCargadorPLC () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO UpdateCargadorPLCNotFound;
+
+		
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbBit0;
+	int dbBit1;
+	int dbBit2;
+	int dbBit3;
+	char dbCodCar [2 + 1];
+
+
+	int dbPtoCom;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbPtoCom = bMensaje [1];
+	dbBit0 = (bMensaje [3] & BIT1) > 0 ? 1 : 0;
+	dbBit1 = (bMensaje [3] & BIT2) > 0 ? 1 : 0;
+	dbBit2 = (bMensaje [3] & BIT3) > 0 ? 1 : 0;
+	dbBit3 = (bMensaje [3] & BIT4) > 0 ? 1 : 0;
+
+	EXEC SQL UPDATE CARAGV
+	 SET bit0 = :dbBit0,
+		bit1 = :dbBit1,
+		bit2 = :dbBit2,
+		bit3 = :dbBit3
+		where ptocom = :dbPtoCom
+		returning codcar into :dbCodCar;
+
+
+	EXEC SQL COMMIT;
+
+	// Indicar que tenemos el estado del cargador
+	nCargador = atoi (dbCodCar);
+	g_Container.SetEstadoCargador (nCargador);
+
+	return;
+
+UpdateCargadorPLCNotFound:
+	MSGERROR1 ("Cargador de bateria %d no encontrado",
+		dbPtoCom);
+}
+
+
+/* Buscar el siguiente cargador de bateria libre.
+	Si el Agv ya está posicionado sobre la posicion (mpAgv), ya le vale
+ */
+bool CDBEstacion::GetCargadorLibre(UINT mpAgv, UINT * ptoCom)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// This is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("GetCargadorLibre () : ", sqlca, oraca);
+	
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbPtoCom;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbPtoCom = mpAgv;
+
+	EXEC SQL DECLARE CURCARAGVACT	// Posición Actual del Agv
+		CURSOR FOR
+		SELECT ptocom 
+		FROM CARAGV
+		WHERE agv = 0
+			AND bit0 = 1	// en funcionamiento
+			AND bit1 = 0	// Sin error
+			AND bit2 = 1	// No cargando
+			AND ptocom = :dbPtoCom;
+
+	EXEC SQL DECLARE CURCARAGV 
+		CURSOR FOR
+		SELECT ptocom 
+		FROM CARAGV
+		WHERE agv = 0
+			AND bit0 = 1	// en funcionamiento
+			AND bit1 = 0	// Sin error
+			AND bit2 = 1	// No cargando
+		ORDER BY PRIORIDAD ASC;
+
+	EXEC SQL WHENEVER NOTFOUND GOTO GetCargadorLibreNotPosAct;
+
+	EXEC SQL OPEN CURCARAGVACT;
+
+	EXEC SQL FETCH CURCARAGVACT INTO :dbPtoCom;
+
+
+	*ptoCom = dbPtoCom;
+
+	if (false)
+	{
+	
+	GetCargadorLibreNotPosAct:
+	
+		// Solo si no se ha encontrado en su posicion actual
+		EXEC SQL WHENEVER NOTFOUND GOTO GetCargadorLibreNotFound;
+		EXEC SQL OPEN CURCARAGV;
+
+		do
+		{
+			EXEC SQL FETCH CURCARAGV INTO :dbPtoCom;
+			// Si el Agv está ya en esta posicion, ya le vale. 
+			// Si está ocupada la posicion, try again
+			if (dbPtoCom != (int)mpAgv && (CAgv::IsOccupiedCP (dbPtoCom) || CAgv::IsOccupiedCP (dbPtoCom + 100)))
+				continue;
+			else
+				break;
+		} while (true);
+
+
+
+		EXEC SQL CLOSE CURCARAGV;
+
+		*ptoCom = dbPtoCom;
+	}
+
+	EXEC SQL CLOSE CURCARAGVACT;
+
+	return (true);
+
+GetCargadorLibreNotFound:
+
+	EXEC SQL CLOSE CURCARAGVACT;
+	EXEC SQL CLOSE CURCARAGV;
+	return (false);
+
+}
+
+
+// Ver si el PLC está indicando que el cargador ya está
+bool CDBEstacion::IsCargado(UINT ptoCom, bool* todaviaCargando)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// This is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("IsCargado () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO IsCargadoNotFound;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbPtoCom;
+	int dbBit2;
+	int dbBit3;
+
+	EXEC SQL END DECLARE SECTION;
+	
+	dbPtoCom = ptoCom;
+
+	EXEC SQL DECLARE CURCARGADO
+		CURSOR FOR
+			SELECT bit2,	// 0: Cargando 1: No cargando
+					bit3	// 0: Batería Llena
+			FROM CARAGV
+			WHERE ptocom = :dbPtoCom;
+
+	EXEC SQL OPEN CURCARGADO;
+
+	EXEC SQL FETCH CURCARGADO INTO :dbBit2, :dbBit3;
+
+	EXEC SQL CLOSE CURCARGADO;
+
+	*todaviaCargando = 0 == dbBit2 ? true : false;
+
+	return (0 == dbBit3 ? true : false);
+
+
+IsCargadoNotFound:
+
+	EXEC SQL CLOSE CURCARGADO;
+
+	MSGERROR1 ("Cargador de bateria del punto %d no encontrado", ptoCom);
+	return (false);
+}
+
+
+// Ver si se puede generar orden basado en la ocupación
+void CDBEstacion::SetOrdenEstacion()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("SetOrdenEstacion () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+		int dbResult;
+		char * ptrCodEstPul;
+
+	EXEC SQL END DECLARE SECTION;
+
+	ptrCodEstPul = m_pEstacion->codestpul;
+
+	dbResult = 0;
+
+
+	// Michael 29.01.2002. No generar órdenes si no está en automático
+	if (!g_Container.IsEnFuncionamiento ())
+		return;
+
+	CSingleLock lockOrden (&g_Container.m_csForzarOrden);
+	MSGTRACE ("SetOrdenEstacion () Esperando lock...");
+	lockOrden.Lock ();
+	MSGTRACE ("SetOrdenEstacion () Got lock...");
+
+
+	switch (m_pEstacion->tipestpul [0])
+	{
+		case 'P':
+
+			EXEC SQL EXECUTE
+				begin
+					:dbResult := map.SetOrdenPulVac (:ptrCodEstPul);
+					commit;
+				end;
+			END-EXEC;
+			break;
+		case 'T':
+			EXEC SQL EXECUTE
+				begin
+					:dbResult := map.SetOrdenEstacion (:ptrCodEstPul);
+					commit;
+				end;
+			END-EXEC;
+			break;
+	}
+
+	lockOrden.Unlock ();
+
+	if (dbResult != 0)
+	{
+		g_GestorOrden.GetAutomaticOrden ();
+	}
+
+}		
+
+// Solo para pruebas
+void CDBEstacion::TestGeneracionOrden(LPCTSTR ptrCodest, LPCTSTR tipEst)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("TestGeneracionOrden () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+		int dbResult;
+		char * ptrCodEstPul;
+
+	EXEC SQL END DECLARE SECTION;
+
+	ptrCodEstPul = (char *)ptrCodest;
+
+	dbResult = 0;
+	
+	switch (tipEst [0])
+	{
+		case 'P':
+
+			EXEC SQL EXECUTE
+				begin
+					:dbResult := map.SetOrdenPulVac (:ptrCodEstPul);
+					commit;
+				end;
+			END-EXEC;
+			break;
+		case 'T':
+			EXEC SQL EXECUTE
+				begin
+					:dbResult := map.SetOrdenEstacion (:ptrCodEstPul);
+					commit;
+				end;
+			END-EXEC;
+			break;
+	}
+	if (dbResult != 0)
+	{
+		g_GestorOrden.GetAutomaticOrden ();
+	}
+
+
+}
+
+
+// Actualizar los Agvs que están en carga de bateria
+void CDBEstacion::GetAgvEnCargador()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// This is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("GetAgvEnCargador () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbPtoCom;
+	int dbAgv;
+	int dbWegstr;
+
+	EXEC SQL END DECLARE SECTION;
+
+
+	EXEC SQL DECLARE CURAGVENCARGA CURSOR FOR
+	SELECT ptocom, agv, wegstr
+	FROM caragv
+	WHERE agv != 0;
+
+	EXEC SQL OPEN CURAGVENCARGA;
+
+	EXEC SQL WHENEVER NOTFOUND GOTO GetAgvEnCargadorNoHayMas;
+
+	for (;;)
+	{
+		EXEC SQL FETCH CURAGVENCARGA INTO :dbPtoCom, :dbAgv, :dbWegstr;
+		CAgv * ptrAgv = g_pGestor->GetAgvPtr (dbAgv);
+		if (ptrAgv)
+		{
+			ptrAgv->InsertarAGV (dbPtoCom, 1);
+			ptrAgv->SetEstado (CARGARBAT);
+			ptrAgv->m_pFzdat->wegstr = dbWegstr;
+		}
+		else
+			MSGERROR1 ("GetAgvEnCargador: No encontrado el Agv: %d", dbAgv);
+	}
+
+
+	
+GetAgvEnCargadorNoHayMas:
+
+	EXEC SQL CLOSE CURAGVENCARGA;		
+
+}
+
+// Ver si se puede descargar en un pulmón de lleno
+UINT CDBEstacion::GetDescargaLleno(LPCTSTR codord)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("GetDescargaLleno () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	const char * dbCodEstPul;
+	const char * dbCodord;
+	int dbRetVal;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbCodord = codord;
+	dbCodEstPul = m_pEstacion->codestpul;
+
+	EXEC SQL EXECUTE
+	begin
+		:dbRetVal := map.GetDescargaLleno (:dbCodEstPul, :dbCodord);
+		end;
+	END-EXEC;
+
+	return (dbRetVal);
+}
+
+
+// Llenar array global de los puntos de espera
+void CDBEstacion::SetPuntosEspera()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// This is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	UINT numAgvs = 0;
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("SetPuntosEspera () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO SetPuntosEsperaNotFound;
+	
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbPtoCom;
+	int dbPos;
+	char dbLado [2];
+	char dbTipMesa [2];
+	char dbSenAgv [2];
+	char dbCodEstPul [8];
+	int dbNumAgvDes;
+	int dbNumTotalTren;
+	int dbNumTotal;
+	int dbUrgency;
+
+	EXEC SQL END DECLARE SECTION;
+
+	CPuntoDescanso * ptrPunto;
+
+
+	EXEC SQL DECLARE curvpdes CURSOR FOR
+	select 
+		codestpul,
+		ptocom, 
+		posicion, 
+		lado, 
+		tipmesa,
+		senagv,
+		numagvdes,
+		trunc (espacio*10)
+	from vpuntodescanso;
+	
+	EXEC SQL DECLARE CURTOTALTREN
+	CURSOR FOR			// Xavi, 18/10/02: Afegim descartest al cursor
+		select nvl (sum (nvl(descartest.numagvdes,estacion.numagvdes)), 0)
+			from tren, estacion, descartest 
+			where tren.codtren = estacion.codtren
+			and estacion.codestpul = descartest.codestpul(+)
+			and estacion.codart = descartest.codart(+)
+			and estacion.estest != 'P'
+			and tren.codtren = 
+				(select codtren from estacion where codestpul = :dbCodEstPul);
+
+	EXEC SQL DECLARE CURTOTALPERMITIDO
+	CURSOR FOR        // Xavi, 18/10/02: Afegim descartest al cursor
+		select nvl (sum (nvl(descartest.numagvdes,estacion.numagvdes)), 0)
+			from tren, estacion, descartest
+			where tren.codtren = estacion.codtren
+			and estacion.codestpul = descartest.codestpul(+)
+			and estacion.codart = descartest.codart(+)
+			and tren.estado = 'H'
+			and tren.codtren in
+				(select distinct (codtren) from estacion where estest = 'P');
+ 
+	
+	CSingleLock lockPuntos (&g_Container.m_csPuntoDescanso);
+	lockPuntos.Lock ();
+
+	// Borrar configuración actual
+
+	g_Container.SetTotalAgvsAllowed (0);
+
+	UINT numPuntos = g_Container.m_PuntoDescansoArray.GetSize ();
+	for (UINT i = 0; i < numPuntos; i++)
+	{
+		ptrPunto = g_Container.m_PuntoDescansoArray.GetAt (0);
+		delete ptrPunto;
+		g_Container.m_PuntoDescansoArray.RemoveAt (0);
+	}
+
+	if (g_Container.IsEnFuncionamiento ())
+	{
+	
+	EXEC SQL OPEN curvpdes;
+
+	for (numAgvs = 0;;)
+	{
+		EXEC SQL FETCH curvpdes INTO 
+			:dbCodEstPul,
+			:dbPtoCom,
+			:dbPos,
+			:dbLado,
+			:dbTipMesa,
+			:dbSenAgv,
+			:dbNumAgvDes,
+			:dbUrgency; 
+
+		EXEC SQL OPEN CURTOTALTREN;
+		
+
+		EXEC SQL FETCH CURTOTALTREN INTO
+			:dbNumTotalTren;
+
+		EXEC SQL CLOSE CURTOTALTREN;
+
+		dbNumAgvDes += dbNumTotalTren;
+	
+		// Para compensar por el posicionamiento en mesas simples cuando entra de culo
+		if (dbTipMesa [0] == 'S' && dbSenAgv [0] == 'B' && dbPos > 1)
+			dbPos--;
+	
+
+
+		CPuntoDescanso * ptrPunto = new CPuntoDescanso (dbPtoCom, 
+			dbPos, 
+			dbLado [0],
+			dbNumAgvDes,
+			dbUrgency);
+
+		g_Container.m_PuntoDescansoArray.Add (ptrPunto);
+	}
+
+
+SetPuntosEsperaNotFound:
+
+	EXEC SQL OPEN CURTOTALPERMITIDO;
+	EXEC SQL FETCH CURTOTALPERMITIDO INTO :dbNumTotal;
+	EXEC SQL CLOSE CURTOTALPERMITIDO;
+
+	g_Container.SetTotalAgvsAllowed (dbNumTotal);
+
+	EXEC SQL CLOSE curvpdes;
+
+	} // Si está en funcionamiento
+	lockPuntos.Unlock ();
+
+
+
+
+}
+
+
+UINT CDBEstacion::GetDescarga(LPCTSTR codord)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("GetDescarga () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	const char * dbCodEstPul;
+	const char * dbCodord;
+	int dbRetVal;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbCodord = codord;
+	dbCodEstPul = m_pEstacion->codestpul;
+
+	EXEC SQL EXECUTE
+	begin
+		:dbRetVal := map.GetDescarga (:dbCodEstPul, :dbCodord);
+		end;
+	END-EXEC;
+
+	return (dbRetVal);
+}
+
+
+// Ver si se puede realizar una operación de carga en la estación
+UINT CDBEstacion::GetCarga(LPCTSTR codord)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("GetCarga () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	const char * dbCodEstPul;
+	const char * dbCodord;
+	int dbRetVal;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbCodord = codord;
+	dbCodEstPul = m_pEstacion->codestpul;
+
+	EXEC SQL EXECUTE
+	begin
+		:dbRetVal := map.GetCarga (:dbCodEstPul, :dbCodord);
+		end;
+	END-EXEC;
+
+	return (dbRetVal);
+
+}
+
+// Inicializar array de los cargadores de bareria
+void CDBEstacion::InitArrayCargadores(UINT *ptrArray)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// This is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	EXEC SQL DECLARE CURCARAGVARRAY 
+		CURSOR FOR
+		SELECT ptocom 
+		FROM CARAGV
+		ORDER BY PRIORIDAD ASC;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+		
+		int dbPtoCom;
+
+	EXEC SQL END DECLARE SECTION;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("InitArrayCargadores () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO InitArrayCargadoresNotFound;
+
+
+	EXEC SQL OPEN CURCARAGVARRAY;
+
+	// Michael 24.05.2007 for (int i = 0; i < 8; i ++)
+	int i;
+	for (i = 0; i < MAX_CARGADORES; i ++)
+	{
+		EXEC SQL FETCH CURCARAGVARRAY INTO :dbPtoCom;
+		ptrArray [i] = dbPtoCom;
+	}
+
+InitArrayCargadoresNotFound:
+
+	EXEC SQL CLOSE CURCARAGVARRAY;
+	ASSERT (i == MAX_CARGADORES);
+
+}
+
+// Actualizar la configuración de los descansos para el BuB
+void CDBEstacion::UpdateBuBDescansos()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// This is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("UpdateBuBDescansos () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO UpdateBuBDescansosNotFound;
+	
+	EXEC SQL DECLARE CURDESCANSOS 
+		CURSOR FOR
+		SELECT estagv.ptocom, estagv.posicion, estagv.lado, 
+			estacion.codestdes, estacion.numagvdes
+		FROM ESTAGV, ESTACION
+		WHERE ESTAGV.CODESTPUL = ESTACION.CODESTPUL;
+
+
+	EXEC SQL BEGIN DECLARE SECTION;
+		int dbPtoCom;
+		int dbPos;
+		char dbLado [2];
+		char dbCodEstDes [8];
+		int dbNumAgvDes;
+
+	EXEC SQL END DECLARE SECTION;
+
+
+	EXEC SQL OPEN CURDESCANSOS;
+
+	for (;;)
+	{
+		EXEC SQL FETCH CURDESCANSOS INTO
+			:dbPtoCom,
+			:dbPos,
+			:dbLado,
+			:dbCodEstDes,
+			:dbNumAgvDes;
+			
+
+
+		g_Container.m_GestorEstBuB.SetEstacionBuB (
+			dbPtoCom,
+			dbPos,
+			dbLado [0],
+			dbCodEstDes,
+			dbNumAgvDes);
+
+	}
+
+
+UpdateBuBDescansosNotFound:
+	EXEC SQL CLOSE CURDESCANSOS;
+
+}
+
+
+
+// Insertar en histórico de ocupaciones
+void CDBEstacion::InsertarHistOcuEst()
+{
+
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	const char * dbCodEstPul;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbCodEstPul = m_pEstacion->codestpul;
+	
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("InsertarHistOcuEst () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL INSERT INTO HISTOCUEST 
+           (REGID
+            ,CODESTPUL
+            ,OCUPUL
+            ,FECREG
+            ,AUTOMAN
+            ,SENACT
+            ,PALSUM
+            ,RESAGV
+            ,TIPESTPUL
+            ,FINSUM
+            ,SUMCON
+            ,PREPAL1
+            ,PREPAL2
+            ,MESAOP1
+            ,MESAOP2
+            ,ERRMESA1
+            ,ERRMESA2
+            ,CODPULVAC)
+			SELECT HISTOCUEST_SEQ.NEXTVAL,
+			 CODESTPUL
+            ,OCUPUL
+            ,FECREG
+            ,AUTOMAN
+            ,SENACT
+            ,PALSUM
+            ,RESAGV
+            ,TIPESTPUL
+            ,FINSUM
+            ,SUMCON
+            ,PREPAL1
+            ,PREPAL2
+            ,MESAOP1
+            ,MESAOP2
+            ,ERRMESA1
+            ,ERRMESA2
+            ,CODPULVAC
+			FROM VOCUEST
+			WHERE CODESTPUL = :dbCodEstPul;
+
+		EXEC SQL COMMIT;
+}
+
+
+
+void CDBEstacion::UpdateDefectoMesa(BYTE *bMensaje)
+{
+
+	int zona = bMensaje [1];
+	int indMesa = bMensaje [2];
+	SHORT defecto = bMensaje [3];
+	
+	#pragma message ("Don't forget to update procedure INICIARSISTEMA in package")
+
+	if (zona > 0 && zona <= 3 && indMesa >= 0 && indMesa < 100)
+	{
+		SHORT oldDefecto = g_Container.m_defArray [zona - 1] [indMesa];
+		if (oldDefecto != defecto)
+		{
+			// Mirar cada bit
+			for (int i = 0; i < 5; i++)
+			{
+				if ((0x01 & (defecto >> i)) != (0x01 & (oldDefecto >> i)))
+					if (0x01 & (defecto >> i))
+					{
+						// El defecto se produce
+						CDBEstadistica::LogDefecto (zona, indMesa, i, false);
+						/* Michael 13.08.2002
+							GetStringDefecto occasionally crashes.
+							According to Oracle Documentation Character pointer
+							variables call strlen () to get length of buffer.
+							So must be initialized */
+
+						LPTSTR strCodMes = new CHAR [10]; 
+						strcpy (strCodMes, "         ");	// Inicializar
+						LPTSTR strCodClInd = new CHAR [10];
+						strcpy (strCodClInd, "         ");	// Inicializar
+						LPTSTR strDefecto = new CHAR [31];
+						memset (strDefecto, ' ', 30);
+						strDefecto [30] = '\0';
+						CDBEstadistica::GetStringsDefecto (zona, 
+							indMesa, 
+							i, 
+							strCodMes,
+							strCodClInd,
+							strDefecto);
+
+						CAlarma * ptrAlarm = new CAlarma;
+						ptrAlarm->AvisarAlarma (80, 1 + i, 3, zona, 0, 0, 0, 0, 0,
+							strCodMes, strCodClInd);
+
+						delete [] strCodMes;
+						delete [] strCodClInd;
+						delete [] strDefecto;
+
+
+					}
+					else
+					{
+						CDBEstadistica::LogDefecto (zona, indMesa, i, true);
+					}
+
+			}
+			g_Container.m_defArray [zona - 1] [indMesa] = defecto;
+		}
+	}
+	else
+		MSGERROR2 ("Defecto zona: %d index Mesa: %d no encontrado",
+			zona, indMesa);
+}

@@ -1,0 +1,184 @@
+// Agv.h: interface for the CAgv class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#if !defined(AFX_AGV_H__EBD7D77A_227E_11D5_992A_0010B547EBE6__INCLUDED_)
+#define AFX_AGV_H__EBD7D77A_227E_11D5_992A_0010B547EBE6__INCLUDED_
+
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "FZ_TELE.H"
+#include "Telegrama.h"
+#include "DBEstadoPLC.h"	// Added by ClassView
+
+class CTelegrama;
+class CSerialCom;
+class COrden;
+
+
+
+#define AGV_FUERASISTEMA	(m_estado == AGVFUERASISTEMA)
+
+
+class CAgv  
+{
+public:
+	bool SetCargado();
+	bool QuizasCaminoAlt();
+	bool IsModifiableDestino();
+	UINT m_cOrdenesOk; // Flag set por el Gestor de Órdenes al intentar con el Agv
+	bool IsPossibleCandidateForOrder();
+	bool IsCargadorCurPos(bool fAll = false);
+	bool IsEnCircuito () { return (m_fEnCircuito); };
+	void SetEnCircuito () { m_fEnCircuito = true; m_fWillUpdateBuB = true; };
+	void SetFueraCircuito () { m_fEnCircuito = false; };
+	void SetAgvEmpujando (UINT nAgv);
+	void SetPeticionCarga (UINT nCargador) { m_nCargador = nCargador;}
+	static bool IsOccupiedCP (UINT cp, bool fRealmenteOcupado = false);
+	UINT m_nextKnot;	// Next knot if Agv gets drive permission
+	UINT m_knot;	// Knot ocupado por el AGV
+	bool GetStationError () { return (0 != m_uErrorEstacion);}
+	void ResetOrden();
+	UINT GetTimeToPickup (UINT mpZiel, UINT mpDest = 0);
+	bool IsCandidateForOrder(TEstadoAGV * estado, COrden * ptrOrden = NULL);
+	void SetDeleted();
+	void InsertarAGV (UINT mp, UCHAR mpPos);	// Registrar Agv como presente
+	CCriticalSection m_cs;	// Critical Section para controlar aceso
+	LARGE_INTEGER SetNextPollInterval();
+	LPCSTR GetStringEstado();
+	COrden * m_pOrden;	// Orden de transporte
+	void SetOrden (COrden * orden);
+	static NMP_tabelle* GetPNmp (UINT mp, UINT ziel);
+	static unsigned int GetNmpWeg  (unsigned int  mp, unsigned int ziel, long *weg);
+	unsigned short GetPosWeg (TYP_EINZELZIEL Ziel);
+	static unsigned short GetWeg (TYP_FZDAT * fzdat);
+	static UINT GetNmp(unsigned short mp, unsigned short ziel);
+	bool m_fBuB;	// Avisar el BuB de los telegramas recibidos
+	static void SetZiel (TYP_EINZELZIEL * ptrZiel,
+        unsigned short nr = 0,
+        unsigned char  pos = 0,
+	    unsigned char  lage = 'L',
+        unsigned char ebene = 0);
+	TYP_FZDAT * GetFzdatPtr ();
+	int GetAtoi (LPCTSTR pStr, int len);
+	static LARGE_INTEGER GetTimePlusInterval (UINT interval);
+	LARGE_INTEGER m_minNextPoll;	// System min. time to next poll
+	LARGE_INTEGER m_maxNextPoll;	// System max. time to next poll
+	LARGE_INTEGER m_CurTime;		// Cur Time
+
+	TEstadoAGV GetEstado () {return (m_estado);};
+	void SetEstado (TEstadoAGV estado);
+	void ResetBuB () { m_fBuB = false; };
+	LARGE_INTEGER Poll ();
+	UINT m_id;
+	CAgv(UINT nId, CSerialCom * pSerCom);
+	virtual ~CAgv();
+	CTelegrama m_Tel;	// Telegramas en curso
+	CTpcView * m_pView;	// View
+	void Init();	// Inicializar datos del AGV
+	TYP_FZDAT * m_pFzdat; // Datos del AGV
+	bool HasBeenPolled () { return (m_fHasBeenPolled);};
+	UINT m_nCargador;	// CP del cargador en caso de peticion de carga de bateria
+	UINT m_nMantenimiento;	// Michael 14.06.2005 T5K CP de mantenimiento si es que se desea ir a mantenimiento
+	void SetCargaBateriaBuB (bool fOnOff) { m_fCargaBateriaBuB = fOnOff; };
+	bool IsCargaBateriaBuB () { return (m_fCargaBateriaBuB); };
+	bool SOrdenCargada();
+
+private:
+	bool EnviarMantenimiento();
+	bool SEnviarMantenimiento();
+	CDBEstadoPLC m_estadoPLC;
+	UINT m_lastUmleitMp;	// Almacenar último MP enviado por Umleit...
+	bool IsOk60();
+	UINT m_uDeadlockCounter;	// Contador para detectar deadlocks
+	bool m_fCargaBateriaBuB;	// Carga de bateria solicitado por BuB
+	bool IsOccupied60();
+	void SetCountEsperar();
+	void SimulateUmleitTelegram (UINT altNmp);
+	UINT GetKnotCurPos();
+	bool IsDestinoCP (UINT cp);
+	bool IsPuntoDescansoCurPos();
+	bool IsSalirPuntoDescanso();
+	void GetPuntoParking (TYP_EINZELZIEL *ptrZiel, UINT curMp = 0, bool fSetFuera = true);
+	bool IsAparcado();
+	bool m_fEnCircuito;	// El Agv se considera en el circuito
+	UINT m_numError;
+	bool GetDiffBlkWegPaar (NMP_tabelle * mp_nmp_tab);
+	bool SendUmleitTelegram(UINT nmp);
+	USHORT Umleiten();
+	bool IsIrCargarBat();
+	bool OkDestinoCarga();
+	bool m_fHasBeenPolled;	// Indicar que el Agv ha sido "polled" por lo menos una vez
+	bool SetDestinoRechazo ();
+	bool OkDestinoDescarga();
+	UINT m_countEsperar;	// Contador antes de ir a punto de espera
+	bool OkDestinoEspecial();
+	bool IsDeadlocked();
+	bool IsOkEmpujar();
+	void ResetEmpujado () { m_nAgvEmpujando = 0; };
+	bool IsEmpujado () { return (m_nAgvEmpujando != 0); };
+	void EmpujarAgvBloqueo(bool desdeAtras = false);
+	UINT m_nAgvEmpujando;	// Agv que quiere empujar este
+	bool CheckTeleAgv (char * idTele);
+	bool SCargarBateria();
+	bool SwitchOnCargadorPLC();
+	void SleepAgv();
+	bool EnviarCargador();
+	bool ShouldBlock();
+	void SetTeleBlocked (UCHAR * kommand, bool fBlock);
+	UINT IsKnot();
+	bool IsDriveForbiddenByBuB () { return (1 == m_pFzdat->FVvonBedienung ? true : false);};
+	bool BlockForKnotNumber();
+	bool SOrderDoneParcial();
+	bool SOrdenCargadaParcial();
+	void SetMesaToDeliver (UCHAR * kommand);
+	void SetMesaToPickup (UCHAR * kommand);
+	void CheckStationError (UINT module, UINT error);
+	UINT m_uErrorEstacion;	// Record error in the station
+	bool m_fWillUpdateBuB;	// Intention of updating the BuB
+	bool m_fWasBlocked; // Indicar si el AGV está bloqueado o no
+	bool UnblockDrive();
+	bool IsBlocked();
+	void SetBlocked(bool fBlock);
+	bool SimulateActionBlockTelegram (typ_tele_block tele);
+	bool DescargarOrden ();
+	bool SetAction (bool fFree);
+	bool SendBlockTelegram (typ_tele_block tele);
+	bool SetDestinoManual ();
+	bool ModificarDestino(TYP_EINZELZIEL& destino);
+	bool DestinoDiferente(TEstadoAGV estado);
+	void SetCancelled();
+	bool AgvConDestino ();
+	bool m_fSendQuitum;	// Indicar si enviar un quitum o no
+	bool m_fTimeOutThisPoll;	// Se ha dado timeout en el ciclo de poll
+	void GetPuntoDescanso (TYP_EINZELZIEL * ptrZiel, UINT curMp = 0);
+	bool EnviarPuntoEspera(UINT curMp = 0);
+	NMP_tabelle* GetPNmpFromNmp(UINT mp, UINT nmp);
+	bool IsOrdenAgvCargado();
+	bool InterpretarTeleManualOrder (typ_tele_at& tele);
+	bool InterpretarTeleError (typ_tele_error& tele);
+	bool InterpretarTeleGrosseStatus (typ_tele_gs& tele);
+	bool InterpretarTeleKleineZustand (typ_tele_kz& tele);
+	bool InterpretarTeleWeg (typ_tele_weg& tele);
+	void SetDelivered();
+	int	 SimulatePoll();
+	bool SimulateInfoTelegram(typ_tele_info tele);
+	bool SOrderDone();
+	bool SetUnloadDestination();
+	bool CargarOrden();
+	bool SLlegadoDestino();
+	bool ComprobarRespuestaInfo (typ_tele_info tele);
+	bool SendInfoTelegram (typ_tele_info tele);
+	bool PickupOrden();
+	void UpdateEstado();
+	UINT m_numTimeout;	// Numero de timeouts que ha dado el AGV
+	void ActionTimeoutPoll();
+	void InterpretarTelegramaRecibido ();
+	TEstadoAGV m_estado;	// Estado del AGV
+	CSerialCom* m_pSerCom;	// Comunicaciones Port Serie
+
+};
+
+#endif // !defined(AFX_AGV_H__EBD7D77A_227E_11D5_992A_0010B547EBE6__INCLUDED_)

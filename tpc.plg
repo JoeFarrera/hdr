@@ -1,0 +1,88 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: tpc - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\Michael\LOCALS~1\Temp\RSP1D.tmp" with contents
+[
+/nologo /Zp1 /MDd /W3 /Gm /GX /ZI /Od /I ".\TrafficManager" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_AFXDLL" /D "_MBCS" /FR"Debug/" /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\Projects\tpc\Agv.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\Michael\LOCALS~1\Temp\RSP1D.tmp" 
+Creating temporary file "C:\DOCUME~1\Michael\LOCALS~1\Temp\RSP1E.tmp" with contents
+[
+/nologo /subsystem:windows /incremental:yes /pdb:"Debug/tpc_2009.pdb" /debug /machine:I386 /out:"Debug/tpc_2009.exe" /pdbtype:sept 
+.\Debug\Agv.obj
+.\Debug\AGVSelectDlg.obj
+.\Debug\Alarma.obj
+.\Debug\AutomaticTrafficControl.obj
+.\Debug\BackgroundTasks.obj
+.\Debug\Block.obj
+.\Debug\BlockTableAGVTypePair.obj
+.\Debug\ClientSocket.obj
+.\Debug\Container.obj
+.\Debug\CrashDistance.obj
+.\Debug\CrashDistanceArray.obj
+.\Debug\DBCrono.obj
+.\Debug\DBEstacion.obj
+.\Debug\DBEstadistica.obj
+.\Debug\DBEstadoPLC.obj
+.\Debug\DBGestorOrden.obj
+.\Debug\DBUtil.obj
+.\Debug\Destination.obj
+.\Debug\DialogStopPlc.obj
+.\Debug\DistanceReqWayTele.obj
+.\Debug\EstacionBuB.obj
+.\Debug\FTFHistoryDlg.obj
+.\Debug\FzBedingung.obj
+.\Debug\FzSituation.obj
+.\Debug\GestorAGV.obj
+.\Debug\GestorEstacionBuB.obj
+.\Debug\GestorOrden.obj
+.\Debug\InsertarAgvDlg.obj
+.\Debug\LeftView.obj
+.\Debug\MainFrm.obj
+.\Debug\MonitorCliente.obj
+.\Debug\Msg.obj
+.\Debug\Orden.obj
+.\Debug\PLCThread.obj
+.\Debug\PuntoDescanso.obj
+.\Debug\SerialCom.obj
+.\Debug\SiemensSR.obj
+.\Debug\SituationSet.obj
+.\Debug\SolicitarCargaBat.obj
+.\Debug\SR_util.obj
+.\Debug\StartTime.obj
+.\Debug\StdAfx.obj
+.\Debug\Tabsetfv.obj
+.\Debug\TCPServerSocket.obj
+.\Debug\Telegrama.obj
+.\Debug\TestEstacionDLG.obj
+.\Debug\TestGenOrdDlg.obj
+.\Debug\TestSRDlg.obj
+.\Debug\TiempoOrdenDlg.obj
+.\Debug\tpc.obj
+.\Debug\tpcDoc.obj
+.\Debug\tpcView.obj
+.\Debug\TraceLevelDlg.obj
+.\Debug\tpc.res
+"..\..\Program Files\SIEMENS\SIMATIC.NET\sr\lib\s7_sr.lib"
+..\..\oracle\ora92\precomp\lib\orasql9.lib
+]
+Creating command line "link.exe @C:\DOCUME~1\Michael\LOCALS~1\Temp\RSP1E.tmp"
+<h3>Output Window</h3>
+Compiling...
+Agv.cpp
+What to do with a manual order from BuB ?
+Linking...
+
+
+
+<h3>Results</h3>
+tpc_2009.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

@@ -1,0 +1,424 @@
+// DBEstadoPLC.cpp: implementation of the CDBEstadoPLC class.
+//
+//////////////////////////////////////////////////////////////////////
+
+
+#include "stdafx.h"
+#include "tpc.h"
+#include "DBEstadoPLC.h"
+#include "SiemensSR.h"
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+// The ORACA=YES option must be specified to enable use of the ORACA
+EXEC ORACLE OPTION (ORACA=YES);
+
+typedef char asciz[80];
+EXEC SQL TYPE asciz IS STRING(80) REFERENCE;
+
+
+EXEC SQL BEGIN DECLARE SECTION;
+struct dbEstado
+{
+ int idestgen;
+ int p1;
+ int p2;
+ int p31;
+ int p32;
+ int p5; 
+ int p6; 
+ int p8; 
+ int p9;
+ int c1; 
+ int c2; 
+ int c3; 
+ int c4; 
+ int c5; 
+ int c6; 
+ int c7; 
+ int c8;
+ // Michael Agv9 23.05.2007
+ int c9; 
+ // Michael Agv9 23.05.2007
+ int a2;
+ int desa2;
+ // Michael 10.06.2002 Semáforos
+ int s1;	
+ int s2;
+ // Michael 10.06.2002 Semáforos Fin
+};
+EXEC SQL END DECLARE SECTION;
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CDBEstadoPLC::CDBEstadoPLC()
+{
+	
+    // Save text of SQL current statement in the ORACA if an error occurs.
+    oraca.orastxtf = ORASTFERR;
+
+}
+
+CDBEstadoPLC::~CDBEstadoPLC()
+{
+
+}
+
+// Enviar el bloque de estado al PLC
+void CDBEstadoPLC::SendEstadoPLC()
+{
+	if (g_Container.IsSimulateEscribirPLC())
+	{
+		MSGWARNING ("Simulando escribir estado PLC");
+		return;
+	}
+
+
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("SendEstadoPLC: ", sqlca, oraca);
+
+	EXEC SQL WHENEVER NOTFOUND GOTO SendEstadoPLCNotFound;
+
+	// Si no han sido leido los cargadores, no enviar estado
+	if (! g_Container.IsActualizadoTodosCargadores ())
+	{
+		CAlarma * ptrAlarma = new CAlarma;
+		ptrAlarma->AvisarAlarma (6, 3, 0);
+		// TODO 2015 - look at memory management of alarm object
+		return;
+	}
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	
+	struct dbEstado * ptrDBEstado;
+
+	EXEC SQL END DECLARE SECTION;
+
+	BYTE * bMensaje = new BYTE [MAXESTADOSENDPLC];
+
+	ptrDBEstado = new struct dbEstado;
+
+	// Solo hay una fila en la tabla
+	EXEC SQL SELECT IDESTGEN,
+			 P1, 
+			 P2,   
+			 P31,  
+			 P32,  
+			 P5,   
+			 P6,   
+			 P8,   
+			 P9,   
+			 C1,   
+			 C2,   
+			 C3,   
+			 C4,   
+			 C5,   
+			 C6,   
+			 C7,   
+			 C8, 
+			 -- Michael Agv9 23.05.2007
+			 C9,
+			 // Michael Agv9 23.05.2007
+			 A2,   
+			 DESA2,
+			 S1,
+			 S2
+		INTO :ptrDBEstado
+		FROM ESTGEN;	
+
+
+	bMensaje [0] = 'B';	// tipo telegrama
+	bMensaje [1] = ptrDBEstado->p1;
+	bMensaje [2] = ptrDBEstado->p2;
+	bMensaje [3] = ptrDBEstado->p31;
+	bMensaje [4] = ptrDBEstado->p32;
+	bMensaje [5] = ptrDBEstado->p5;
+	bMensaje [6] = ptrDBEstado->p6;
+	bMensaje [7] = ptrDBEstado->p8;
+	bMensaje [8] = ptrDBEstado->p9;
+	bMensaje [9] = ptrDBEstado->c1;
+	bMensaje [10] = ptrDBEstado->c2;
+	bMensaje [11] = ptrDBEstado->c3;
+	bMensaje [12] = ptrDBEstado->c4;
+	bMensaje [13] = ptrDBEstado->c5;
+	bMensaje [14] = ptrDBEstado->c6;
+	bMensaje [15] = ptrDBEstado->c7;
+	bMensaje [16] = ptrDBEstado->c8;
+	bMensaje [17] = ptrDBEstado->a2 & 0xFF0000;
+	bMensaje [18] = ptrDBEstado->a2 & 0xFF00;
+	bMensaje [19] = ptrDBEstado->a2 & 0x00FF;
+	bMensaje [20] = ptrDBEstado->desa2;
+	// Michael 10.06.2002
+	bMensaje [21] = ptrDBEstado->s1;
+	bMensaje [22] = ptrDBEstado->s2;
+	// Michael 10.06.2002 fin
+	// Michael 23.05.2007 AGV9
+	bMensaje [23] = ptrDBEstado->c9;
+	// Michael 23.05.2007 AGV9
+
+
+	
+
+    g_Container.m_pMainWnd->PostMessage (WM_USER_SIEMENS_SEND, 0, (long)bMensaje);
+	
+	return;
+
+SendEstadoPLCNotFound:
+
+	MSGERROR ("SendEstadoPLC (): Estado no encontrado");
+
+
+
+}
+
+
+
+// Activar o desactivar el cargador de bateria
+void CDBEstadoPLC::SwitchCargador(UINT nAgv, UINT ptoCom, UINT wegstr, bool setOn)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 
+	LPTSTR ptrActPos = "This is the start allocating space";
+
+	EXEC SQL WHENEVER SQLERROR DO plsql_error("SwitchOnCargador () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO SwitchOnCargadorNotFound;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbPtoCom;
+	int dbAgv;
+	asciz dbUpdateStmt;
+	char dbCodCar [2 + 1];
+	int dbWegstr;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbPtoCom = ptoCom;
+	if (setOn)
+	{
+		dbAgv = nAgv;
+		dbWegstr = wegstr;
+	}
+	else
+	{
+		dbAgv = 0;	
+		dbWegstr = 0;
+	}
+
+	ptrActPos = "Select codcar";
+
+
+	EXEC SQL SELECT 
+		codcar INTO :dbCodCar
+		FROM CARAGV
+		WHERE ptocom = :dbPtoCom;
+
+
+	ptrActPos = "Update Estgen...";
+
+	sprintf ((char *)dbUpdateStmt, 
+		"UPDATE ESTGEN SET C%s = %d", dbCodCar, setOn ? 1 : 0);
+
+	EXEC SQL EXECUTE IMMEDIATE :dbUpdateStmt;
+
+	// Actualiza el Agv como en el cargador o no
+	ptrActPos = "Update Caragv...";
+	EXEC SQL UPDATE CARAGV
+		SET AGV = :dbAgv,
+			WEGSTR = :dbWegstr
+		WHERE PTOCOM = :dbPtoCom;
+
+	ptrActPos = "Update Caragv finished...";
+
+	EXEC SQL COMMIT;
+
+	SendEstadoPLC ();
+
+	return;
+
+SwitchOnCargadorNotFound:
+
+	CString strTemp;
+	strTemp.Format ("Cargador del punto %d no encontrado en statement: %s",
+		ptoCom, 
+		ptrActPos);
+	AfxMessageBox (strTemp);
+
+}
+
+
+
+// Resetear sentidos de pulmones y cargadores al arrancar
+void CDBEstadoPLC::LimpiarEstadoPLC()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 	EXEC SQL WHENEVER SQLERROR DO plsql_error("LimpiarEstadoPLC () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL UPDATE ESTGEN 
+		 SET P1 = 0,      
+		 P2 = 0,      
+		 P31 = 0,     
+		 P32 = 0,     
+		 P5 = 0,     
+		 P6 = 0,     
+		 P8 = 0,     
+		 P9 = 0,     
+		 C1 = 0,     
+		 C2 = 0,     
+		 C3 = 0,     
+		 C4 = 0,     
+		 C5 = 0,     
+		 C6 = 0,     
+		 C7 = 0,     
+		 C8 = 0;
+
+	EXEC SQL COMMIT;
+
+	return;
+
+
+}
+
+
+
+void CDBEstadoPLC::SetDestinoA2(LPCTSTR codord)
+{
+	
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 	EXEC SQL WHENEVER SQLERROR DO plsql_error("SetDestinoA2 () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO SetDestinoA2NotFound;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	const char * dbCodord;
+	int dbPtoCom;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbCodord = codord;
+
+	EXEC SQL SELECT PTOCOMDESORIG
+		INTO :dbPtoCom
+		FROM ORDTRAN
+		WHERE CODORD = :dbCodord;
+
+	if (false)
+	{
+	SetDestinoA2NotFound:
+		dbPtoCom = 1;	// Enviamos a 1 si no existe
+	}
+		
+
+	if (dbPtoCom != 3 && dbPtoCom != 1)
+	{
+		MSGERROR1 ("Destino en A2 es: %d", dbPtoCom);
+		dbPtoCom = 1;
+	}
+
+	// 0: A1 1: A3 
+	dbPtoCom = dbPtoCom == 1 ? 0 : 1;
+
+	// Michael 8.07.2013 pulmon 1 - not possible
+	dbPtoCom = 1; // Following above logic
+	
+	EXEC SQL UPDATE ESTGEN
+		SET A2 = :dbCodord,
+		DESA2 = :dbPtoCom;
+
+
+	EXEC SQL COMMIT;
+
+	SendEstadoPLC ();
+
+}
+
+
+// Devolver el estado actual de los semáforos
+void CDBEstadoPLC::GetEstadoSemaforo(int * s1, int * s2)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 	EXEC SQL WHENEVER SQLERROR DO plsql_error("GetEstadoSemaforo () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbs1;
+	int dbs2;
+
+	EXEC SQL END DECLARE SECTION;
+	
+	dbs1 = 0;
+	dbs2 = 0;
+
+	EXEC SQL 
+		SELECT s1, s2 
+		INTO :dbs1, :dbs2
+		FROM ESTGEN;
+
+	*s1 = dbs1;
+	*s2 = dbs2;
+
+}
+
+void CDBEstadoPLC::SetEstadoSemaforo(int s1, int s2)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 	EXEC SQL WHENEVER SQLERROR DO plsql_error("SetEstadoSemaforo () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbs1;
+	int dbs2;
+
+	EXEC SQL END DECLARE SECTION;
+	
+	dbs1 = s1;
+	dbs2 = s2;
+
+	MSGAVISO2 ("Actualizando semaforo S1: %d S2: %d", s1, s2);
+
+	EXEC SQL 
+	UPDATE ESTGEN
+	SET S1 = :dbs1,
+		S2 = :dbs2;
+
+	EXEC SQL COMMIT;
+
+	SendEstadoPLC ();
+
+}
+
+
+
+void CDBEstadoPLC::UpdateInstanceTimestamp()
+{
+	// Michael Mods 2009 - no precompilado
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 	EXEC SQL WHENEVER SQLERROR DO plsql_error("UpdateInstanceTimestamp () : ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+
+	EXEC SQL 
+	UPDATE InstanceTimeStamp
+		set lastUpdate = sysdate;
+
+	EXEC SQL COMMIT;
+
+
+}

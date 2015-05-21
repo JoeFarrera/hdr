@@ -1,0 +1,315 @@
+// DBUtil.cpp: implementation of the CDBUtil class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "tpc.h"
+
+
+#include "DBUtil.h"
+
+#include "TpcDoc.h"
+#include "TpcView.h"
+#include "Container.h"
+#include "msgmacro.h"
+#include "Alarma.h"
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+
+// The ORACA=YES option must be specified to enable use of the ORACA
+EXEC ORACLE OPTION (ORACA=YES);
+
+
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+sql_context ctxPLCThread;
+sql_context ctxGestorAGVThread;
+sql_context ctxTPCDocThread;
+sql_context ctxBackgroundTasks;
+sql_context ctxAgv2Thread;
+sql_context ctxAgv10Thread;
+sql_context ctxAgv11Thread;
+
+sql_context ctxs [20];
+
+EXEC SQL END DECLARE SECTION;
+
+
+void plsql_error(char *msg, T_sqlca sqlca, T_oraca oraca)
+{
+	MSGFATAL (msg);
+    sqlca.sqlerrm.sqlerrmc[sqlca.sqlerrm.sqlerrml] = '\0';
+    oraca.orastxt.orastxtc[oraca.orastxt.orastxtl] = '\0';
+    oraca.orasfnm.orasfnmc[oraca.orasfnm.orasfnml] = '\0';
+
+
+	
+
+    MSGFATAL (sqlca.sqlerrm.sqlerrmc);
+	MSGFATAL1 ("in %s", oraca.orastxt.orastxtc);
+	MSGFATAL2 ("on line %d of %s",
+			oraca.oraslnr,
+			oraca.orasfnm.orasfnmc);
+
+	CString strTemp;
+	strTemp.Format ("%s %s.\nLa aplicación no puede continuar y parará.",
+				msg,
+				sqlca.sqlerrm.sqlerrmc);
+
+	CAlarma * ptrAlarma = new CAlarma;
+	ptrAlarma->AvisarAlarma (6, 1, 0, 0,0,0,0,0,0,strTemp);
+
+
+	// Dejará que el mensaje de alarma salga ??
+	AfxMessageBox (strTemp, MB_ICONSTOP);
+			
+/* Disable ORACLE error checking to avoid an infinite loop
+ * should another error occur within this routine.
+ */
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+
+
+  // Roll back any pending changes and disconnect from Oracle.
+    EXEC SQL ROLLBACK RELEASE;
+
+	
+    // errorExit ();
+	exit (0);
+	return;
+}
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+
+
+CDBUtil::CDBUtil()
+{
+	m_fConectado = false;
+	m_nThread = 0;
+	oraca.orastxtf = ORASTFERR;
+	EXEC SQL ENABLE THREADS;
+	
+
+
+}
+
+CDBUtil::~CDBUtil()
+{
+
+}
+
+
+
+
+// conectar a Oracle según usuario/clave@db definido en variable global :username
+void * CDBUtil::ConectarOracle(LPCTSTR sThread)
+{
+
+
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	char    *username;
+
+	EXEC SQL END DECLARE SECTION;
+
+	CString strThread = sThread;
+
+	m_ptrContext = GetOracleContext(strThread);
+	if (m_ptrContext == NULL)
+	{
+		int i = m_ctx_array.GetCount();
+		i++;
+		// EXEC SQL CONTEXT ALLOCATE :ctxAgv2Thread;
+		EXEC SQL CONTEXT ALLOCATE :ctxs[i];
+		// m_ptrContext = &ctxAgv2Thread;
+		m_ptrContext = &ctxs [i];
+		CTX_ID id = { strThread, &ctxs [i] };
+		m_ctx_array.Add (id);
+		SetOraContext (m_ptrContext);	// TODO: This is another way of retreiving the thread
+
+	}
+	MSGAVISO2 ("Connect Thread %s id: %d", strThread, AfxGetThread()->m_nThreadID);
+
+
+	sql_context * ptrContext = (sql_context *) m_ptrContext;
+
+
+	EXEC SQL CONTEXT USE :*ptrContext;
+	MSGAVISO2 ("Using context: %d en thread %d", ptrContext, 
+		AfxGetThread()->m_nThreadID);
+
+  // Call sql_error() function on any error in an embedded SQL statement
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("ConectarOracle: ", sqlca, oraca);
+
+
+  // Save text of SQL current statement in the ORACA if an error occurs.
+    oraca.orastxtf = ORASTFERR;
+
+  // Connect to Oracle.
+
+   CString strUserConnect = AfxGetApp ()->GetProfileString ("Settings", "Usuario");
+
+   if (strUserConnect.IsEmpty ())
+		{
+			CString strTemp;
+			strTemp.LoadString (IDS_NOORACLEUSER);
+			AfxMessageBox (strTemp);
+			username = "hdr/hdr";
+			AfxGetApp ()->WriteProfileString ("Settings", "Usuario", "hdr/hdr");
+			
+		}
+		else 
+			username = strUserConnect.GetBuffer (100);
+
+
+#if ! defined (FOREXPORTTOINDUMAT)
+    EXEC SQL CONNECT :username; // IDENTIFIED BY :password;
+    MSGAVISO1 ("ConectarOracle(): Connected to Oracle as %s",
+				 username);
+	EXEC SQL CONTEXT USE DEFAULT;
+
+	m_fConectado = true;
+#else
+
+	m_fConectado = false;
+#endif
+
+	return (m_ptrContext);
+
+}
+
+void * CDBUtil::GetOracleContext (LPCTSTR sThread)
+{
+	for (int i = 0; i < m_ctx_array.GetCount(); i++)
+	{
+		CTX_ID id = m_ctx_array.GetAt(i);
+		if (id.strThread == sThread)
+		{
+			return id.ptrCtx;
+		}
+	}
+	// Got here - not found
+	return NULL;
+	
+
+
+
+}
+
+
+
+// Desconectar de la base de datos
+void CDBUtil::DisconnectOracle()
+{	
+
+	// Michael 27.04.2009 sql_context * ptrContext = (sql_context *) m_ptrContext;
+	sql_context * ptrContext = (sql_context *)GetAndDeleteOraContext();
+
+
+	// Michael 23.04.2009
+	if (!m_ptrContext)
+	{
+		MSGERROR ("m_ptrContext es null!");
+		return;
+	}
+
+
+
+
+	EXEC SQL CONTEXT USE :*ptrContext;
+	
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("DisconnectOracle: ", sqlca, oraca);
+	EXEC SQL ROLLBACK WORK RELEASE;
+
+	MSGAVISO ("Desconectado de Oracle");
+}
+
+// Guardar sql_context para el thread
+void CDBUtil::SetOraContext(void *ptrCtx)
+{
+	int i = GetThreadIndex();
+	m_CtxArray [i].nThreadID = AfxGetThread()->m_nThreadID;
+	m_CtxArray [i].ptrCtx = ptrCtx;
+}
+
+// Buscar sql_context para el thread
+void * CDBUtil::GetOraContext()
+{
+	DWORD dwThreadID = AfxGetThread()->m_nThreadID;
+	for (UINT i = 0; i < m_nThread; i++)
+		if (m_CtxArray [i].nThreadID == dwThreadID)
+			return (m_CtxArray [i].ptrCtx);
+
+	// Si llega aquí - no va	
+		
+	ASSERT (FALSE);
+
+	return (NULL);	
+
+}
+
+
+
+int CDBUtil::GetThreadIndex()
+{
+	if (m_nThread < MAX_PROCESSES)
+	{
+		return (m_nThread++);
+	}
+	else
+	{
+		for (int i = 0; i < MAX_PROCESSES; i++)
+		{
+			if (m_CtxArray [i].nThreadID == 0)
+				return i;
+		}
+	}
+
+	ASSERT (FALSE);
+
+	return (0);	
+
+}
+
+
+void CDBUtil::InitThreadArray()
+{
+	for (int i = 0; i < MAX_PROCESSES; i++)
+	{
+		m_CtxArray [i].nThreadID = 0;
+	}
+
+}
+
+void * CDBUtil::GetAndDeleteOraContext()
+{
+	DWORD dwThreadID = AfxGetThread()->m_nThreadID;
+	for (UINT i = 0; i < m_nThread; i++)
+		if (m_CtxArray [i].nThreadID == dwThreadID)
+		{
+			m_CtxArray [i].nThreadID = 0;
+			return (m_CtxArray [i].ptrCtx);
+		}
+
+	// Si llega aquí - no va	
+		
+	ASSERT (FALSE);
+
+	return (NULL);	
+
+
+
+}

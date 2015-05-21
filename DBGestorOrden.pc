@@ -1,0 +1,861 @@
+// DBGestorOrden.cpp: implementation of the CDBGestorOrden class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "tpc.h"
+#include "DBGestorOrden.h"
+#include "Orden.h"
+#include "DBEstacion.h"
+#include "Agv.h"
+#include "GestorAgv.h"
+#include "macro.h"
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+//////////////////////////////////////////////////////////////////////
+
+// The ORACA=YES option must be specified to enable use of the ORACA
+EXEC ORACLE OPTION (ORACA=YES);
+
+// Variables Oracle
+
+
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+
+
+struct dbOrden
+{
+ int codord;
+ int agv;
+ char feccre [7];
+ char fecasig [7];
+ char fecrec [7];
+ char fecfin [7];
+ int estado;
+ int priini;
+ int priact;
+ int prifin;
+ char codart [11];
+ int numpal;
+ char estdestpc [8];
+ char estoritpc [8];
+ char estdestpcini [8];
+ int ptocomori;
+ int posori;
+ char ladoori [2];
+ int ptocomdes;
+ int posdes;
+ char ladodes [2];
+ int ptocomdesorig;
+ int posdesorig;
+ char ladodesorig [2];
+ int ptocomact;
+ int posact;
+ char ladoact [2];
+ char tipord [2];
+ char errord [2];
+ char mesa1 [2];
+ char mesa2 [2];
+ char simcarga [2];
+ char ordret [2];
+};
+
+struct idbOrden
+{
+ short codord;
+ short agv;
+ short feccre;
+ short fecasig;
+ short fecrec;
+ short fecfin;
+ short estado;
+ short priini;
+ short priact;
+ short prifin;
+ short codart;
+ short numpal;
+ short estdestpc;
+ short estoritpc;
+ short estdestpcini;
+ short ptocomori;
+ short posori;
+ short ladoori;
+ short ptocomdes;
+ short posdes;
+ short ladodes;
+ short ptocomdesorig;
+ short posdesorig;
+ short ladodesorig;
+ short ptocomact;
+ short posact;
+ short ladoact;
+ short tipord;
+ short errord;
+ short mesa1;
+ short mesa2;
+ short simcarga;
+ short ordret;
+ };
+
+
+EXEC SQL END DECLARE SECTION;
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CDBGestorOrden::CDBGestorOrden()
+{
+	oraca.orastxtf = ORASTFERR;
+
+}
+
+CDBGestorOrden::~CDBGestorOrden()
+{
+
+}
+
+// Insertar una orden nueva: NOTA: Solo las órdenes del BuB pasan por aquí
+void CDBGestorOrden::InsertarOrden(COrden *ptrOrden)
+{
+
+ 	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("InsertarOrden: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+	
+	CString strVar;
+
+
+	
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	struct dbOrden * ptrDBorden;
+
+	EXEC SQL END DECLARE SECTION;
+
+	// Buscar los datos de las estaciones de la orden
+	ptrOrden->m_ptrEstOri = new CDBEstacion;
+	ptrOrden->m_ptrEstDes = new CDBEstacion;
+
+#if defined (FOREXPORTTOINDUMAT)
+return;
+#endif
+
+	ptrDBorden = new struct dbOrden;
+	ptrDBorden->agv = 0;
+	ptrDBorden->estado = NEWORDER;
+	ptrDBorden->priini = 1;
+	ptrDBorden->priact = 1;
+	ptrDBorden->prifin = 1;
+	ptrDBorden->numpal = 0;
+	if (ptrOrden->m_at.fMesa1)
+		ptrDBorden->numpal = 1;
+	if (ptrOrden->m_at.fMesa2)
+		ptrDBorden->numpal++;
+
+
+	ptrDBorden->ptocomori = ptrOrden->m_at.hz.nDest;
+	ptrDBorden->posori = ptrOrden->m_at.hz.nPos;
+	sprintf (ptrDBorden->ladoori, "%c", ptrOrden->m_at.hz.ucSide);
+
+	ptrDBorden->ptocomdes = ptrOrden->m_at.bz.nDest;
+	// Si va al A3, envialo al A2
+	if (3 == ptrDBorden->ptocomdes)
+		ptrDBorden->ptocomdes = 2;
+		
+	ptrDBorden->posdes = ptrOrden->m_at.bz.nPos;
+	sprintf (ptrDBorden->ladodes, "%c", ptrOrden->m_at.bz.ucSide);
+
+	ptrDBorden->ptocomdesorig = ptrOrden->m_at.bz.nDest;
+	ptrDBorden->posdesorig = ptrOrden->m_at.bz.nPos;
+	sprintf (ptrDBorden->ladodesorig, "%c", ptrOrden->m_at.bz.ucSide);
+
+	ptrDBorden->ptocomact = ptrOrden->m_at.hz.nDest;
+	ptrDBorden->posact = ptrOrden->m_at.hz.nPos;
+	sprintf (ptrDBorden->ladoact, "%c", ptrOrden->m_at.hz.ucSide);
+
+	sprintf (ptrDBorden->tipord, "%c", ptrOrden->m_at.herkunft);
+
+	sprintf (ptrDBorden->errord, "%c", 'N');
+
+	sprintf (ptrDBorden->mesa1, "%c",
+				ptrOrden->m_at.fMesa1 ? 'S' : 'N');
+ 	sprintf (ptrDBorden->mesa2, "%c",
+				ptrOrden->m_at.fMesa2 ? 'S' : 'N');
+ 	sprintf (ptrDBorden->simcarga, "%c",
+				ptrOrden->m_at.fSimCarga ? 'S' : 'N');
+
+	sprintf (ptrDBorden->ordret, "%c", 'N');
+
+	ptrOrden->m_ptrEstOri->GetEstAgv (ptrOrden->m_at.hz.nDest,
+		ptrOrden->m_at.hz.nPos,
+		ptrOrden->m_at.hz.ucSide);
+
+	ptrOrden->m_ptrEstDes->GetEstAgv (ptrOrden->m_at.bz.nDest,
+		ptrOrden->m_at.bz.nPos,
+		ptrOrden->m_at.bz.ucSide);
+
+	strcpy (ptrDBorden->estdestpcini, (char *)ptrOrden->m_ptrEstDes->GetCodEstPul ());
+	strcpy (ptrDBorden->estoritpc, (char *)ptrOrden->m_ptrEstOri->GetCodEstPul ());
+	
+	// Si va al A3, envíalo al A2
+	if (3 == ptrOrden->m_at.bz.nDest)
+	{
+		ptrOrden->m_at.bz.nDest = 2;
+
+		ptrOrden->m_ptrEstDes->GetEstAgv (
+			ptrOrden->m_at.bz.nDest,
+			ptrOrden->m_at.bz.nPos,
+			ptrOrden->m_at.bz.ucSide);
+
+	}
+	strcpy (ptrDBorden->estdestpc, (char *)ptrOrden->m_ptrEstDes->GetCodEstPul ());
+
+	EXEC SQL SELECT ordtranseq.nextval
+		INTO :ptrDBorden->codord
+		FROM dual;
+
+	
+	EXEC SQL INSERT INTO ORDTRAN
+            (CODORD
+            ,AGV
+            ,FECCRE
+            ,FECASIG
+			,FECREC
+            ,FECFIN
+            ,ESTADO
+            ,PRIINI
+            ,PRIACT
+            ,PRIFIN
+            ,CODART
+            ,NUMPAL
+            ,ESTDESTPC
+            ,ESTORITPC
+            ,ESTDESTPCINI
+            ,PTOCOMORI
+            ,POSORI
+            ,LADOORI
+            ,PTOCOMDES
+            ,POSDES
+            ,LADODES
+            ,PTOCOMDESORIG
+            ,POSDESORIG
+            ,LADODESORIG
+            ,PTOCOMACT
+            ,POSACT
+            ,LADOACT
+            ,TIPORD
+            ,ERRORD
+            ,MESA1
+            ,MESA2
+            ,SIMCARGA
+            ,ORDRET)
+		SELECT 
+			  :ptrDBorden->codord
+			 , :ptrDBorden->agv
+			 , sysdate
+			 , null
+			 , null
+			 , null
+			 , :ptrDBorden->estado
+			 , :ptrDBorden->priini
+			 , :ptrDBorden->priact
+			 , :ptrDBorden->prifin
+			 , null
+			 , :ptrDBorden->numpal
+			 , :ptrDBorden->estdestpc
+			 , :ptrDBorden->estoritpc
+			 , :ptrDBorden->estdestpcini
+			 , :ptrDBorden->ptocomori
+			 , :ptrDBorden->posori
+			 , :ptrDBorden->ladoori
+			 , :ptrDBorden->ptocomdes
+			 , :ptrDBorden->posdes
+			 , :ptrDBorden->ladodes
+			 , :ptrDBorden->ptocomdesorig
+			 , :ptrDBorden->posdesorig
+			 , :ptrDBorden->ladodesorig
+			 , :ptrDBorden->ptocomact
+			 , :ptrDBorden->posact
+			 , :ptrDBorden->ladoact
+			 , :ptrDBorden->tipord
+			 , :ptrDBorden->errord
+			 , :ptrDBorden->mesa1
+			 , :ptrDBorden->mesa2
+			 , :ptrDBorden->simcarga
+			 , :ptrDBorden->ordret
+			 from dual;
+
+		
+	EXEC SQL update conest
+			set resagv = resagv + :ptrDBorden->numpal 
+			where codestpul = :ptrDBorden->estoritpc;
+
+	EXEC SQL update conest
+			 set resagv = resagv + :ptrDBorden->numpal 
+			where codestpul = :ptrDBorden->estdestpc;
+	
+	EXEC SQL COMMIT;
+
+	// Actualizar el identificador de la orden
+	sprintf ((char *)ptrOrden->m_at.id_nr, "%*d", KMAXID_AT - 1, ptrDBorden->codord);
+	delete ptrDBorden;
+}
+
+// Actualizar el estado de una orden
+void CDBGestorOrden::UpdateEstadoOrden(COrden *ptrOrden, TEstadoOrden estadoNuevo)
+{
+
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+		EXEC SQL CONTEXT USE :*ptrCtx;
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbCodord;
+	int dbAgv;
+	int dbRetVal;
+	int dbEstado;
+	int dbRecogido;
+
+	EXEC SQL END DECLARE SECTION;
+
+#if defined (FOREXPORTTOINDUMAT)
+return;
+#endif
+
+
+	dbCodord = atoi ((char *)ptrOrden->m_at.id_nr); // Any chance of this failing ?
+	dbAgv = ptrOrden->m_at.fznr;
+	dbEstado = estadoNuevo;
+
+// Michael 07.04.2003  EXEC SQL WHENEVER SQLERROR DO plsql_error("UpdateEstadoOrden: ");
+	EXEC SQL WHENEVER SQLERROR GOTO UpdateEstadoOrdenError;
+	
+	while (true)
+	{
+
+	MSGTRACE3 ("UpdateEstadoOrden: dbCodord: %d dbEstado: %d estadoNuevo: %d",
+						dbCodord, dbEstado, estadoNuevo);
+	if (estadoNuevo != ptrOrden->GetEstado ())
+	{
+	// Solo actualizar si el estado es diferente
+	switch (estadoNuevo)
+	{
+		case PENDINGASSIGN:
+		case COLLECT:
+		// Michael : Este estado no modifica asignación 17.10.2001 case COLLECT:
+			EXEC SQL EXECUTE
+				begin
+					if (map.AsignarOrdTran (:dbCodord, :dbEstado, :dbAgv)) then
+						:dbRetVal := 1;
+					else
+						:dbRetVal := 0;
+					end if;
+					commit;
+				end;
+			END-EXEC;
+			break;
+		case DELIVER:
+			EXEC SQL EXECUTE
+				begin
+					if (map.IniciarCargaOrdTran (:dbCodord, :dbEstado)) then
+						:dbRetVal := 1;
+					else
+						:dbRetVal := 0;
+					end if;
+					commit;
+				end;
+			END-EXEC;
+			if (g_Container.m_fSimulateCom)
+			{
+				EXEC SQL EXECUTE
+				begin
+					map.simload(:dbCodord);
+					commit;
+				end;
+				END-EXEC;
+			}
+				
+			break;
+		case DELIVERED:
+			// Michael 29.08.2002 Aquí se produce un bloqueo ?
+			MSGTRACE1 ("CDBGestorOrden::UpdateEstadoOrden () antes FinDescargaOrdTran %s",
+				ptrOrden->m_at.id_nr); 
+			EXEC SQL EXECUTE
+				begin
+					if (map.FinDescargaOrdTran (:dbCodord, :dbEstado)) then
+						:dbRetVal := 1;
+					else
+						:dbRetVal := 0;
+					end if;
+					commit;
+				end;
+			END-EXEC;
+			if (g_Container.m_fSimulateCom)
+				{
+				EXEC SQL EXECUTE
+				begin
+					map.simunload(:dbCodord);
+					commit;
+				end;
+				END-EXEC;
+				}
+	
+	
+			// Michael 29.08.2002 Aquí se produce un bloqueo ?
+			MSGTRACE1 ("CDBGestorOrden::UpdateEstadoOrden () despues FinDescargaOrdTran %s",
+				ptrOrden->m_at.id_nr); 
+			break;
+		case CANCELLED:
+			switch (ptrOrden->GetEstado ())
+			{
+				case NEWORDER:
+				case PENDINGASSIGN:
+				case COLLECT:
+					// Orden no empezado
+					dbRecogido = 0;
+					break;
+				default:
+					dbRecogido = 1;
+					break;
+			}
+			EXEC SQL EXECUTE
+				begin
+					if (map.AnularOrdTran (:dbCodord, :dbRecogido, :dbEstado)) then
+						:dbRetVal := 1;
+					else
+						:dbRetVal := 0;
+					end if;
+					commit;
+				end;
+			END-EXEC;
+			break;
+	}
+	}
+	else
+		{
+		MSGAVISO2 ("UpdateEstadoOrden (): La orden %s tiene estado %d ya actualizado",
+			ptrOrden->m_at.id_nr,
+			estadoNuevo);
+		}
+	return;
+
+// Michael 07.04.2003
+UpdateEstadoOrdenError:
+ switch(sqlca.sqlcode) 
+	{
+	case -60:	// Bloqueo mutuo
+		MSGERROR1 ("UpdateEstadoOrden (): Oracle Bloque Mutuo orden %s", ptrOrden->m_at.id_nr);
+		continue;
+		break;
+	default:	// otro error - se debe tratar
+		MSGERROR1 ("UpdateEstadoOrden (): Oracle salca.sqlcode is: %d", sqlca.sqlcode);
+		plsql_error("UpdateEstadoOrden: ",sqlca, oraca);
+		return;
+	}
+	} // while (true)
+			
+}
+
+/* Borrar una orden a peticion del BuB
+   Solo se "borra" aquí si es que ha sido anulado. 
+   Sino, se termina convencionalmente
+ */
+void CDBGestorOrden::DeleteOrden(COrden *ptrOrden)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+		EXEC SQL CONTEXT USE :*ptrCtx;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbCodord;
+	int dbEstado;
+	int dbRecogido;
+
+	EXEC SQL END DECLARE SECTION;
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("DeleteOrden: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	dbCodord = atoi ((char *)ptrOrden->m_at.id_nr); // Any chance of this failing ?
+	dbEstado = CANCELLED;
+
+	switch (ptrOrden->GetEstado ())
+	{
+		case NEWORDER:
+		case PENDINGASSIGN:
+		case COLLECT:
+			// Orden no empezado
+			dbRecogido = 0;
+			break;
+		case DELIVER:
+			dbRecogido = 1;
+			break;
+		default:
+			dbRecogido = -1;	// No procede anularlo ya tratado por cambios anteriores
+
+	}
+
+	if (-1 != dbRecogido)
+	{
+		EXEC SQL EXECUTE
+			declare
+				bRetVal boolean;
+			begin
+			bRetVal := map.AnularOrdTran (:dbCodord, :dbRecogido, :dbEstado);
+			commit;
+			end;
+		END-EXEC;
+	}
+
+}
+
+
+// Devolver la orden más prioritaria según el estado pedido
+COrden * CDBGestorOrden::GetOrden(int estado, UINT nAgv)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+		EXEC SQL CONTEXT USE :*ptrCtx;
+	T_sqlca sqlca;	// For this is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	struct dbOrden * ptrDBorden;
+	struct idbOrden * ptriDBorden;
+	int dbEstado;
+	int dbAgv;
+
+
+	EXEC SQL END DECLARE SECTION;
+
+#if defined (FOREXPORTTOINDUMAT)
+	return (NULL);
+#endif
+
+	COrden * ptrOrden = new COrden;	// El borrado de la orden se hara cuando se acabe
+
+	ptrDBorden = new struct dbOrden;
+	ptriDBorden = new struct idbOrden;
+	
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("GetOrden: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO GetOrdenNoHay;
+
+	dbEstado = estado;
+	dbAgv = nAgv;
+
+	EXEC SQL DECLARE CURORDTRANNEW CURSOR FOR
+		select 
+			 CODORD
+            ,AGV
+            ,FECCRE
+            ,FECASIG
+			,FECREC
+            ,FECFIN
+            ,ESTADO
+            ,PRIINI
+            ,PRIACT
+            ,PRIFIN
+            ,CODART
+            ,NUMPAL
+            ,ESTDESTPC
+            ,ESTORITPC
+            ,ESTDESTPCINI
+            ,PTOCOMORI
+            ,POSORI
+            ,LADOORI
+            ,PTOCOMDES
+            ,POSDES
+            ,LADODES
+            ,PTOCOMDESORIG
+            ,POSDESORIG
+            ,LADODESORIG
+            ,PTOCOMACT
+            ,POSACT
+            ,LADOACT
+            ,TIPORD
+            ,ERRORD
+            ,MESA1
+            ,MESA2
+            ,SIMCARGA
+            ,ORDRET
+			 from ordtran
+		where estado = :dbEstado
+		and (agv = :dbAgv)	-- Si si llama para una orden nueva, agv es 0	
+		order by priact asc, feccre
+		for update;
+	EXEC SQL OPEN CURORDTRANNEW;
+	EXEC SQL FETCH CURORDTRANNEW INTO ptrDBorden:ptriDBorden;
+
+	// Michael 27.11.2001: Solo actualizar si es una orden nueva. Si no, es la
+	// recuperación de órdenes que ya estaban asignadas
+
+	if (NOTHING == estado)
+	{
+		dbEstado = NEWORDER;
+		EXEC SQL UPDATE ORDTRAN
+			set estado = :dbEstado
+			where current of CURORDTRANNEW;
+		EXEC SQL COMMIT;
+	}
+
+	EXEC SQL CLOSE CURORDTRANNEW;
+
+	// Michael 29.04.2015 wasn't initializing the order state
+	ptrOrden->SetEstadoWithoutDB ((TEstadoOrden)dbEstado);
+
+	TYP_AT_DAT at;
+	
+	memset (&at,0,sizeof(at));
+	
+	ptrOrden->m_at.herkunft     = ptrDBorden->tipord [0];	// tipo orden
+
+	CAgv::SetZiel (&ptrOrden->m_at.hz,
+		ptrDBorden->ptocomori,
+		ptrDBorden->posori,
+		ptrDBorden->ladoori [0],
+		0);
+
+	CAgv::SetZiel (&ptrOrden->m_at.bz,
+		ptrDBorden->ptocomdes,
+		ptrDBorden->posdes,
+		ptrDBorden->ladodes [0],
+		0);
+	sprintf ((char *)ptrOrden->m_at.id_nr, "%*d", KMAXID_AT - 1, ptrDBorden->codord);
+
+
+
+	// Revise all this initialization
+	ptrOrden->m_at.af_status = 0;
+	ptrOrden->m_at.akt_org = 0;	// Original Action
+	ptrOrden->m_at.akt_z.nLayer = 0;
+	ptrOrden->m_at.akt_z.ucSide = 0;
+	ptrOrden->m_at.akt_z.nDest = 0;
+	ptrOrden->m_at.akt_z.nPos = 0;
+	ptrOrden->m_at.aktion = 1;
+	ptrOrden->m_at.art = 2; // Not used
+	ptrOrden->m_at.at_lauf_nr = 1;
+	ptrOrden->m_at.bnr = 1;
+
+	if (ptrDBorden->ordret [0] == 'S')
+		ptrOrden->m_at.gesp_at = 1;	// Orden suspendida
+	else
+		ptrOrden->m_at.gesp_at = 0;	// Orden no suspendida
+	ptrOrden->m_at.gesp_hz = 0;	// Collection suspended
+	ptrOrden->m_at.gesp_bz = 0;	// Delivery suspended
+
+	ptrOrden->m_at.fznr = ptrDBorden->agv;
+	
+	ptrOrden->m_at.fMesa1 = ptrDBorden->mesa1 [0] == 'S' ? true : false;
+	ptrOrden->m_at.fMesa2 = ptrDBorden->mesa2 [0] == 'S' ? true : false;
+	ptrOrden->m_at.fSimCarga = ptrDBorden->simcarga [0] == 'S' ? true : false;
+
+
+	ptrOrden->m_at.prio_org = ptrDBorden->priini;
+	ptrOrden->m_at.prio_akt = ptrDBorden->priact;
+
+	// Get station information
+	ptrOrden->m_ptrEstOri = new CDBEstacion;
+	ptrOrden->m_ptrEstDes = new CDBEstacion;
+
+	ptrOrden->m_ptrEstOri->GetEstAgv (ptrOrden->m_at.hz.nDest,
+		ptrOrden->m_at.hz.nPos,
+		ptrOrden->m_at.hz.ucSide);
+
+	ptrOrden->m_ptrEstDes->GetEstAgv (ptrOrden->m_at.bz.nDest,
+		ptrOrden->m_at.bz.nPos,
+		ptrOrden->m_at.bz.ucSide);
+
+	// Michael 2015 TODO Move to PC...
+	strcpy((char *)ptrOrden->m_at.HzString, g_pCourseData->GetAIDStation(1, 
+			ptrOrden->m_at.hz.nDest,
+			ptrOrden->m_at.hz.ucSide,
+			ptrOrden->m_at.hz.nPos,
+			ptrOrden->m_at.hz.nLayer + 1).GetPSName().GetBuffer());
+
+	strcpy((char *)ptrOrden->m_at.BzString, g_pCourseData->GetAIDStation(1, 
+			ptrOrden->m_at.bz.nDest,
+			ptrOrden->m_at.bz.ucSide,
+			ptrOrden->m_at.bz.nPos,
+			ptrOrden->m_at.bz.nLayer + 1).GetPSName().GetBuffer());
+	
+
+
+
+	delete ptrDBorden;
+	delete ptriDBorden;
+
+	return (ptrOrden);
+
+		
+GetOrdenNoHay:
+
+		// No hay órdenes
+
+	delete ptrDBorden;
+	delete ptrOrden;
+
+	return (NULL);
+}
+
+
+// Modificar una orden en la base de datos
+void CDBGestorOrden::ModificarOrden(COrden *ptrOrden)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+		EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// For this is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("ModificarOrden: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+	
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbCodord;
+	int dbPtocomdes;
+	int dbPosdes;
+	char dbLadodes [2];
+	int dbPriact;
+
+	EXEC SQL END DECLARE SECTION;
+
+
+	dbCodord = atoi ((char *)ptrOrden->m_at.id_nr); 
+	dbPtocomdes = ptrOrden->m_at.bz.nDest;
+	dbPosdes = ptrOrden->m_at.bz.nPos;
+	sprintf (dbLadodes, "%c", ptrOrden->m_at.bz.ucSide);
+	dbPriact = ptrOrden->m_at.prio_akt;
+
+	if (dbPriact <= 0 || dbPriact > 5)
+		dbPriact = 1;
+
+	
+	EXEC SQL EXECUTE
+		declare bRetVal boolean;
+		begin
+		bRetVal := map.CanviarDestOrdTran (:dbCodord,
+					:dbPtocomdes,
+					:dbPosdes,
+					:dbLadodes,
+					:dbPriact);
+		commit;
+		end;
+	END-EXEC;
+
+}
+
+// Resetear las ordenes que no han sido recogidas
+void CDBGestorOrden::IniciarSistema()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+
+	T_sqlca sqlca;	// For this is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("IniciarSistema (): ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL EXECUTE
+		begin
+			map.IniciarSistema ();
+			commit;
+		end;
+	END-EXEC;
+
+
+}
+
+
+// Ver si se puede forzar ordenes. Llamado periodicamente
+void CDBGestorOrden::ForzarOrden()
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+		EXEC SQL CONTEXT USE :*ptrCtx;
+	
+	T_sqlca sqlca;	// For this is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+	CSingleLock lockOrden (&g_Container.m_csForzarOrden);
+	MSGTRACE ("ForzarOrden () Esperando lock...");
+	lockOrden.Lock ();
+	MSGTRACE ("ForzarOrden () Got lock...");
+
+// Michael 19.06.2003    EXEC SQL WHENEVER SQLERROR DO plsql_error("ForzarOrden (): ", sqlca, oraca);
+	EXEC SQL WHENEVER SQLERROR GOTO ForzarOrdenOraError;
+
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+
+	EXEC SQL EXECUTE
+		begin
+			map.ForzarOrden ();
+		end;
+	END-EXEC;
+
+	lockOrden.Unlock ();
+
+	return;
+
+// Michael 19.06.2003
+ForzarOrdenOraError:
+ lockOrden.Unlock ();
+ switch(sqlca.sqlcode) 
+	{
+	case -1400:	// Cannot insert null...
+		MSGERROR ("UpdateEstadoOrden (): ForzarOrden insert null..");
+		EXEC SQL WHENEVER SQLERROR CONTINUE;
+		EXEC SQL ROLLBACK;
+		break;
+	default:	// otro error - se debe tratar
+		MSGERROR1 ("ForzarOrden (): Oracle salca.sqlcode is: %d", sqlca.sqlcode);
+		plsql_error("ForzarOrden: ",sqlca, oraca);
+	}
+}
+
+
+// Devolver la prioridad actual de una orden
+UCHAR CDBGestorOrden::GetPrioridadOrden(int codord)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+		EXEC SQL CONTEXT USE :*ptrCtx;
+	T_sqlca sqlca;	// For this is static
+	T_oraca oraca;
+	oraca.orastxtf = ORASTFERR;
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("GetPrioridadOrden: ", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND CONTINUE;
+	
+	EXEC SQL BEGIN DECLARE SECTION;
+
+	int dbCodord;
+	int dbPrio;
+
+	EXEC SQL END DECLARE SECTION;
+
+	dbCodord = codord;
+
+	EXEC SQL EXECUTE
+		begin
+			:dbPrio := map.GetPrioridad (:dbCodord);
+		end;
+	END-EXEC;
+
+	return (dbPrio);
+
+}
+
+

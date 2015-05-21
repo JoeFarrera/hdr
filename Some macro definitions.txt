@@ -1,0 +1,68 @@
+// Some macro definitions
+#ifndef _MACRO_H
+#define _MACRO_H
+
+#define FZ_FAHRERLAUBNIS(i)        ( (i).mistfz0 & BIT1) // Agv Not Blocked
+#define FZ_FAHRVERBOT(i)           ( (i).mistfz0 & BIT2) // Agv Blocked
+#define FZ_AKTION_GESPERRT(i)      ( (i).mistfz0 & BIT3) // Action Stopped 
+#define FZ_SCHLAEFT(i)             ( (i).mistfz0 & BIT4) // Agv hibernated
+#define FZ_LAEDT(i)                ( (i).mistfz0 & BIT5) // Battery contacted
+#define FZ_BATTERIE_GELADEN(i)     ( (i).mistfz0 & BIT6) // Battery full
+
+#define FZ_IM_SYSTEM(i)            ( (i).mzdv0 & BIT1)	// Agv in system
+#define FZ_KOMMUNIKATION(i)        ( (i).mzdv0 & BIT3)	// Agv has communication
+#define FZ_VERMISST(i)             ( (i).mzdv1 & BIT4)	// Agv missing
+
+#define FZ_HOLT(i)                 ( (i).aktion & 1)	// Agv collect
+#define FZ_BRINGT(i)               ( (i).aktion & 2)	// deliver
+#define FZ_MIT_LASTSIM(i)          ( (i).mistfz1 & BIT6)	// Transfer simulation
+
+#define FZ_SOLL_HOLEN(i)           ( (i).aktion & 1)	// Collect
+#define FZ_SOLL_BRINGEN(i)         ( (i).aktion & 2)	// Deliver
+
+#define FZ_AUFTRAG_ERLEDIGT(i)     ( (i).mistfz2 & BIT1)	// Order done
+#define FZ_BELADEN_2(i)              ( (i).mistfz2 & BIT2)	// Loaded conveyer 2
+#define FZ_BELADEN_1(i)              ( (i).mistfz2 & BIT3)	// Loaded conveyer 1
+#define FZ_GEWECHSELT(i)           ( (i).mistfz2 & BIT4)	// Not used
+#define FZ_BATTERIE_LEER(i)        ( (i).mistfz2 & BIT5)	// Battery empty
+#define FZ_HAT_FEHLER(i)           ( (i).mistfz2 & BIT6)	// Has error
+
+#define FZ_SOLL_LADEN(i)           ( (i).msollfz0 & BIT5)	// AGV must load
+
+#define SET_FZ_IN_SYSTEM(i)        ( (i).mzdv0 |= BIT1)	
+
+#define SET_FZ_KOMMUNIKATION(i)    ( (i).mzdv0 |= BIT3)
+#define RESET_FZ_KOMMUNIKATION(i)  ( (i).mzdv0 &= OFFBIT3)
+
+#define SET_FZ_VERMISST(i)         ( (i).mzdv1 |= BIT4)			// Set missing
+#define RESET_FZ_VERMISST(i)       ( (i).mzdv1 &= OFFBIT4)		// Reset missing
+
+#define SET_FZ_FAHRERLAUBNIS(i)    ( (i).msollfz0 = ((i).msollfz0 & OFFBIT2) | BIT1)	// Set release blocking
+#define SET_FZ_FAHRVERBOT(i)       ( (i).msollfz0 = ((i).msollfz0 & OFFBIT1) | BIT2)	// Set blocking
+
+#define SET_AKTION_SPERR(i)        ( (i).msollfz0 |= BIT3)		// Set action not allowed
+#define RESET_AKTION_SPERR(i)      ( (i).msollfz0 &= OFFBIT3)	// Reset
+
+#define SET_SCHLAFEN_EIN(i)        ( (i).msollfz0 |= BIT4)		// Hibernate AGV
+#define RESET_SCHLAFEN_EIN(i)      ( (i).msollfz0 &= OFFBIT4)	// Reset
+
+#define SET_LADEN_EIN(i)           ( (i).msollfz0 |= BIT5)		// Start battery loading (make contact)
+#define RESET_LADEN_EIN(i)         ( (i).msollfz0 &= OFFBIT5)	// Reset
+
+#define SET_VOLL_VON_LG(i)         ( (i).msollfz0 |= BIT6)		// Set battery full
+#define RESET_VOLL_VON_LG(i)       ( (i).msollfz0 &= OFFBIT6)	// Reset battery full
+
+#define SET_AUFTRAG_ERLEDIGT(i)    ( (i).mistfz2 |= BIT1)		// Set order done (Stored information)
+#define RESET_AUFTRAG_ERLEDIGT(i)  ( (i).mistfz2 &= OFFBIT1)	// Reset
+
+#define SET_BELADEN(i)             ( (i).mistfz2 |= BIT3)		// Set loaded (NOTE: Will need two)
+#define RESET_BELADEN(i)           ( (i).mistfz2 &= OFFBIT3)	// Reset loaded
+
+#define SET_BATTERIE_LEER(i)       ( (i).mistfz2 |= BIT5)		// Set battery empty
+#define RESET_BATTERIE_LEER(i)     ( (i).mistfz2 &= OFFBIT5)	// Reset
+
+#define SET_FZ_FEHLER(i)           ( (i).mistfz2 |= BIT6)		// Set agv in error
+#define RESET_FZ_FEHLER(i)         ( (i).mistfz2 &= OFFBIT6)	// Reset
+
+
+#endif /* _MACRO_H */

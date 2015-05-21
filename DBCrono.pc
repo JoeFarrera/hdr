@@ -1,0 +1,177 @@
+// DBCrono.cpp: implementation of the CDBCrono class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "tpc.h"
+#include "DBCrono.h"
+
+
+#ifdef _DEBUG
+#undef THIS_FILE
+static char THIS_FILE[]=__FILE__;
+#define new DEBUG_NEW
+#endif
+
+// The ORACA=YES option must be specified to enable use of the ORACA
+EXEC ORACLE OPTION (ORACA=YES);
+
+// Variables Oracle
+typedef char asciz[80];
+EXEC SQL TYPE asciz IS STRING(80) REFERENCE;
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+struct dbCliente
+{
+	int crono;
+	char tipo;
+	char codigo [10];
+};
+
+struct idbCliente
+{
+	short crono;
+	short tipo;
+	short codigo;
+};
+
+struct dbCliente * ptrDBCliente;
+struct idbCliente * ptriDBCliente;
+
+struct dbCliente * listaClientes [MAX_CLIENTES_TPC];
+
+
+
+EXEC SQL END DECLARE SECTION;
+
+
+
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CDBCrono::CDBCrono(void * ptrContext)
+{
+	m_NumClientes = 0;
+	m_ptrContext = ptrContext;
+	oraca.orastxtf = ORASTFERR;
+}
+
+
+CDBCrono::~CDBCrono()
+{
+
+}
+
+
+
+void CDBCrono::InitClientes(void * ptrCtx)
+{
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("CDBCrono::InitClientes():", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO InitClientesNoHayMas;
+
+	sql_context * ptrContext = (sql_context *)ptrCtx;
+	EXEC SQL CONTEXT USE :*ptrContext;
+
+
+	EXEC SQL DECLARE curClientes CURSOR FOR
+		SELECT crono, 'T', codtren
+		FROM tren
+		WHERE CRONO IS NOT NULL
+		UNION
+		SELECT crono, 'R', codope
+		FROM OPERAD
+		WHERE CRONO IS NOT NULL;
+
+	ptriDBCliente = new struct idbCliente;
+
+	EXEC SQL OPEN curClientes;
+	for (int i = 0; i < MAX_CLIENTES_TPC; )
+	{
+		ptrDBCliente = new struct dbCliente;
+		EXEC SQL FETCH curClientes INTO :ptrDBCliente:ptriDBCliente;
+		listaClientes [i++] = ptrDBCliente;
+		
+
+	}
+
+
+InitClientesNoHayMas:
+
+	EXEC SQL CLOSE curClientes;
+
+	m_NumClientes = i;
+	return;
+}
+
+
+void CDBCrono::UpdateClientes(CString * ptrStrRadio, CString * ptrStrTren)
+{
+	sql_context * ptrCtx = (sql_context *)g_Container.m_dbutil.GetOraContext ();
+	EXEC SQL CONTEXT USE :*ptrCtx;
+ 
+ 	EXEC SQL BEGIN DECLARE SECTION;
+
+	VARCHAR dbCodigo [30];
+	VARCHAR dbTipo [2];
+	int dbCrono;
+	short idbCrono;
+	int dbRetVal;
+	
+	EXEC SQL END DECLARE SECTION;
+
+	// Si no ha sido inicializado, now is the time
+	if (m_NumClientes == 0)
+		InitClientes (ptrCtx);
+
+	CString strTemp;
+
+	ptrStrTren->Empty ();
+	ptrStrRadio->Empty ();
+
+    EXEC SQL WHENEVER SQLERROR DO plsql_error("CDBCrono::UpdateClientes ():", sqlca, oraca);
+	EXEC SQL WHENEVER NOTFOUND GOTO UpdateClientesNotFound;
+	
+	int i;
+	
+	for (i = 0; i < m_NumClientes; i++)
+	{
+		strcpy ((char *)dbCodigo.arr, listaClientes [i]->codigo);
+		dbCodigo.len = strlen ((char *)dbCodigo.arr);
+		dbTipo.arr [0] = listaClientes [i]->tipo;
+		dbTipo.len = 1;
+		dbCrono = listaClientes [i]->crono;
+		idbCrono = 0;	// Para nulls
+
+
+		EXEC SQL EXECUTE
+		begin
+			:dbRetVal := map.EstaConectado (:dbCodigo, :dbTipo, :dbCrono:idbCrono);
+		end;
+		END-EXEC;
+
+
+
+		strTemp.Format ("%s:%c ", dbCodigo.arr, dbRetVal == 1 ? 'S':'N');
+
+		if (idbCrono != -1)
+			listaClientes [i]->crono = dbCrono;
+		else
+			listaClientes [i]->crono = 0;
+
+		if (dbTipo.arr [0] == 'T')
+			*ptrStrTren = *ptrStrTren + strTemp;
+		else
+			*ptrStrRadio = *ptrStrRadio + strTemp;
+	}
+
+	return;
+
+UpdateClientesNotFound:
+
+	MSGERROR ("CDBCrono::UpdateClientes not found");
+
+}
