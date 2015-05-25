@@ -64,6 +64,7 @@ private:
 	CCriticalSection m_CsOut;
 	CCriticalSection m_CsIn;
 	bool GetNextMessageOut (CString * ptrStr);
+	void RemoveHead();
 
 
 

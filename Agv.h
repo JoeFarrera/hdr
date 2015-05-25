@@ -124,7 +124,7 @@ public:
 	void SimulateCargada(bool mesa1, bool mesa2);
 	void CAgv::GetOrden(int orden); 
 	static void SetAGVTCourse(CCourseAGVType* pCourse);
-	void SetClientConnection (WlanMsg * pWlanMsg);
+	WlanMsg * SetClientConnection (void);
 	void UpdateEstado();	
 
 

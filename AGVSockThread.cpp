@@ -23,13 +23,6 @@ CAGVSockThread::~CAGVSockThread()
 {
 	if(m_pMsg)
 	{
-		if(m_pMsg->m_ptrCliSock)
-		{
-			// This is already done delete m_pMsg->m_ptrCliSock;
-			m_pMsg->m_ptrCliSock = NULL;
-		}
-
-		delete m_pMsg;
 		m_pMsg = NULL;
 	}
 
@@ -53,10 +46,8 @@ BOOL CAGVSockThread::InitInstance()
 
 	m_fRun = false;
 
-
 	m_pMsg = m_pSocket->GetPtrWlanMsg();
 
-	m_pAgv->SetClientConnection (m_pMsg);
 	
 	m_fRun = true;
 	m_fTerminate = false;

@@ -41,6 +41,7 @@ void WlanMsg::Init()
 
 void WlanMsg::SetClientSocket(CAgvClientSocket * pSocket) {
 	// MSGAVISO2 ("SetClientSocket: old: %p, new: %p", m_ptrCliSock, pSocket);
+	m_bClose = false;
 	m_ptrCliSock = pSocket;
 }
 
@@ -161,7 +162,8 @@ bool WlanMsg::GetNextMessageIn (CString * ptrStr) {
 	return bReturn;
 
 }
-
+// Return the next message out, 
+// but without removing from the queue
 bool WlanMsg::GetNextMessageOut (CString * ptrStr) {
 	bool bReturn = false;
 	// MSGTRACE ("WlanMsg::GetNextMessageOut Locking");
@@ -170,12 +172,27 @@ bool WlanMsg::GetNextMessageOut (CString * ptrStr) {
 
 	if (m_msgListOut.GetCount() > 0)
 	{
-		*ptrStr = m_msgListOut.RemoveHead();
+		*ptrStr = m_msgListOut.GetHead();
 		bReturn = true;
 	}
 	outListLock.Unlock();
 	// MSGTRACE ("WlanMsg::GetNextMessageOut Unlocked");
 	return bReturn;
+}
+// Remove the next message from the queue
+void WlanMsg::RemoveHead ()
+{
+	// MSGTRACE ("WlanMsg::RemoveHead Locking");
+	CSingleLock outListLock(&m_CsOut);
+	outListLock.Lock();
+
+	if (m_msgListOut.GetCount() > 0)
+	{
+		m_msgListOut.RemoveHead();
+	}
+	outListLock.Unlock();
+	// MSGTRACE ("WlanMsg::RemoveHead Unlocked");
+
 }
 
 
@@ -233,6 +250,8 @@ void WlanMsg::SendNextMsg ()
 		MSGAVISO1 ("WLAN >>: %s", m_strText);
 		if (m_bClose)
 			break;
+		else
+			RemoveHead();
 	}
 }
 

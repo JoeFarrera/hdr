@@ -51,7 +51,6 @@ public:
 private:
 	void ToStringAgv(char * str);
 	void ProcessPendingRead();
-	void ReceiveMsg();
 	void ReadMsg();
 	void IncrementIncomingMessageCount();
 

@@ -1,3 +1,10 @@
 *.ncb
 *.slf
 *.bak
+*.sdf
+*.suo
+Debug/**
+Release/**
+Internet/**
+log/**
+backup/**

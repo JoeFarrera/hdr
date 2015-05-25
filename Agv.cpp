@@ -7947,9 +7947,13 @@ unsigned char CAgv::MapCommandByte (unsigned char k1)
 	return mappedKommand;
 }
 
-void CAgv::SetClientConnection (WlanMsg * pWlanMsg) {
-	m_pWlanMsg = pWlanMsg;
+WlanMsg * CAgv::SetClientConnection (void) {
+	if (m_pWlanMsg == NULL)
+	{
+		m_pWlanMsg = new WlanMsg();
+	}
 	m_WlanTel.SetAgv (m_id);
+	return m_pWlanMsg;
 }
 
 	

@@ -33,9 +33,9 @@ CAgvClientSocket::CAgvClientSocket(CAgv * pAgv)
 	m_pArchiveIn = NULL;
 	m_pArchiveOut = NULL;
 	m_pAgv = pAgv;
-	m_pMsg = new WlanMsg();
-	m_pMsg->SetClientSocket(this);
 	m_bAborted = false;
+	m_pMsg = m_pAgv->SetClientConnection();
+	m_pMsg->SetClientSocket(this);
 }
 
 CAgvClientSocket::CAgvClientSocket()
@@ -86,16 +86,6 @@ void CAgvClientSocket::SendMsg(WlanMsg * pMsg)
 
 }
 
-
-void CAgvClientSocket::ReceiveMsg()
-{
-	//g_Container.m_pMainWnd->PostMessage (WM_USER_SOCKET_READ, 0, (LPARAM)"[Read]");
-
-	m_pMsg->Serialize(*m_pArchiveIn);
-	// g_Container.m_pMainWnd->PostMessage (WM_USER_SOCKET_READ, 0, (LPARAM)"[----]");
-
-
-}
 
 void CAgvClientSocket::IncrementIncomingMessageCount ()
 {
@@ -170,7 +160,9 @@ void CAgvClientSocket::ReadMsg()
 {
 	TRY
 	{
-		ReceiveMsg();	
+		//g_Container.m_pMainWnd->PostMessage (WM_USER_SOCKET_READ, 0, (LPARAM)"[Read]");
+		m_pMsg->Serialize(*m_pArchiveIn);
+		// g_Container.m_pMainWnd->PostMessage (WM_USER_SOCKET_READ, 0, (LPARAM)"[----]");
 	}
 	CATCH(CFileException, e)
 	{
