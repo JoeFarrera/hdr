@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="tpc_new_vs2008"
+	Name="tpc2015"
 	ProjectGUID="{B7D38A5E-83D2-456D-813B-EB0FE62A3CB6}"
 	RootNamespace="tpc"
 	Keyword="MFCProj"
@@ -1172,7 +1172,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\Program Files\SIEMENS\SIMATIC.NET\sr\include\SR_util.cpp"
+				RelativePath="C:\Archivos de programa\SIEMENS\SIMATIC.NET\sr\include\SR_util.cpp"
 				>
 			</File>
 			<File
@@ -1940,7 +1940,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\oracle\ora92\precomp\lib\orasql9.lib"
+			RelativePath="..\..\..\oracle\ora92\precomp\lib\orasql9.lib"
 			>
 		</File>
 		<File
@@ -1948,7 +1948,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\Program Files\SIEMENS\SIMATIC.NET\sr\lib\s7_sr.lib"
+			RelativePath="..\..\..\Archivos de programa\SIEMENS\SIMATIC.NET\sr\lib\s7_sr.lib"
 			>
 		</File>
 	</Files>

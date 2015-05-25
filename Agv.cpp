@@ -185,7 +185,7 @@ LARGE_INTEGER CAgv::Poll()
 						m_Tel.SetTeleTout ();
 						ActionTimeoutPoll ();
 						m_fTimeOutThisPoll = true;
-						MSGERROR1 ("Timeout polling AGV %d", m_id);
+						MSGERROR1 ("Timeout polling AGV: %d", m_id);
 						break;
 					default:
 						m_Tel.SetTeleTout ();
@@ -1836,7 +1836,7 @@ bool CAgv::SendInfoTelegram(typ_tele_info tele)
 			break;
 		case WAIT_TIMEOUT:
 			m_Tel.SetTeleTout ();
-			strTrace.Format ("Timeout waiting for Info reply AGV %d", m_id);
+			strTrace.Format ("Timeout waiting for Info reply Agv: %d", m_id);
 			MSGTRACE (strTrace);
 			break;
 		default:
@@ -2976,7 +2976,7 @@ bool CAgv::InterpretarTeleGrosseStatus(typ_tele_gs &tele)
 			// Michael 30.10.2001 Si el MP no es esperado, recalcular
 			if (mp != agvLastNmp)
 			{
-				MSGWARNING3 ("Agv %d PuntoCom esperado: %d PuntoCom Recibido %d",
+				MSGWARNING3 ("Agv: %d PuntoCom esperado: %d PuntoCom Recibido %d",
 					m_id,
 					agvLastNmp,
 					mp);
@@ -3235,7 +3235,7 @@ bool CAgv::InterpretarTeleGrosseStatus(typ_tele_gs_wlan &tele)
 			// Michael 30.10.2001 Si el MP no es esperado, recalcular
 			if (mp != agvLastNmp)
 			{
-				MSGWARNING3 ("Agv %d PuntoCom esperado: %d PuntoCom Recibido %d",
+				MSGWARNING3 ("Agv: %d PuntoCom esperado: %d PuntoCom Recibido %d",
 					m_id,
 					agvLastNmp,
 					mp);
@@ -3478,7 +3478,7 @@ void CAgv::InterpretarTeleErrorWlan(typ_tele_error_wlan &tele)
 			// Michael 30.10.2001 Si el MP no es esperado, recalcular
 			if (mp != agvLastNmp)
 			{
-				MSGWARNING3 ("InterpretarTeleErrorWlan(): Agv %d PuntoCom esperado: %d PuntoCom Recibido %d",
+				MSGWARNING3 ("InterpretarTeleErrorWlan(): Agv: %d PuntoCom esperado: %d PuntoCom Recibido %d",
 					m_id,
 					agvLastNmp,
 					mp);
@@ -3489,7 +3489,7 @@ void CAgv::InterpretarTeleErrorWlan(typ_tele_error_wlan &tele)
 			//	m_pFzdat->mppos = mpPos;
 			//if (m_pFzdat->nmp != nmp)
 			//	m_pFzdat->nmp = nmp;
-			MSGWARNING3 ("InterpretarTeleErrorWlan(): Agv %d PuntoCom esperado: %d PuntoCom Recibido %d NOT UPDATING AGV POS",
+			MSGWARNING3 ("InterpretarTeleErrorWlan(): Agv: %d PuntoCom esperado: %d PuntoCom Recibido %d NOT UPDATING AGV POS",
 					m_id,
 					agvLastNmp,
 					mp);
@@ -3551,7 +3551,7 @@ bool CAgv::InterpretarTeleError(typ_tele_error &tele)
 			CDBEstadistica::LogError (this, i, false);
 
 
-			MSGERROR3 ("InterpretarTeleError nAgv %d module: %d error: %d",
+			MSGERROR3 ("InterpretarTeleError Agv: %d module: %d error: %d",
 				m_id,
 				m_pFzdat->errofz[i].fehler_nr,
 				m_pFzdat->errofz[i].modul_nr);
@@ -3578,7 +3578,7 @@ bool CAgv::InterpretarTeleError(typ_tele_error &tele)
 bool CAgv::InterpretarTeleManualOrder(typ_tele_at &tele)
 {
 
-	MSGAVISO1 ("InterpretarTeleManualOrder ()->agv: %d", m_id);
+	MSGAVISO1 ("InterpretarTeleManualOrder ()-> Agv: %d", m_id);
 
 
 	/* XXX Look at treatment
@@ -3775,7 +3775,7 @@ bool CAgv::EnviarPuntoEspera (UINT curMp)
 			teleinfo.kommando_1 = BIT7;		// Always 1
 
 
-			MSGAVISO2 ("Enviando Agv %d a punto de descanso %d",
+			MSGAVISO2 ("Enviando Agv: %d a punto de descanso %d",
 				m_id,
 				m_pFzdat->auftziel.nDest);
 
@@ -3849,7 +3849,7 @@ bool CAgv::WlanEnviarPuntoEspera (UINT curMp)
 			teleinfo.kommando_2 = BIT7;
 
 
-			MSGAVISO2 ("Enviando Agv %d a punto  %d",
+			MSGAVISO2 ("Enviando Agv: %d a punto  %d",
 				m_id,
 				m_pFzdat->auftziel.nDest);
 
@@ -4005,13 +4005,13 @@ bool CAgv::DestinoDiferente(TEstadoAGV estado)
 
 	if (fRetVal == false)
 	{
-		MSGAVISO3 ("DestinoDiferente Agv %d DestAgv: %d DestOrden: %d",
+		MSGAVISO3 ("DestinoDiferente Agv: %d DestAgv: %d DestOrden: %d",
 			m_id, m_pFzdat->fzziel.nDest, 
 			pDestOrden->m_pDest->nDest);
 		// M2015 Somehow finding destination of 1 here.
 		if (pDestOrden->m_pDest->nDest == 1)
 		{
-			MSGAVISO3 ("DestinoDiferente Agv %d DestAgv: %d DestOrden: %d PROBLEM AGV WLAN??",
+			MSGAVISO3 ("DestinoDiferente Agv: %d DestAgv: %d DestOrden: %d PROBLEM AGV WLAN??",
 				m_id, m_pFzdat->fzziel.nDest, 
 				pDestOrden->m_pDest->nDest);
 		}
@@ -4079,7 +4079,7 @@ bool CAgv::ModificarDestino(TYPE_STATION_DEF& destino)
 
 
 
-		MSGAVISO3 ("ModificarDestino () Agv %d destino %d pos %d",
+		MSGAVISO3 ("ModificarDestino () Agv: %d destino %d pos %d",
 					m_id,
 					destino.nDest,
 					destino.nPos);
@@ -4152,7 +4152,7 @@ bool CAgv::ModificarDestino(TYPE_STATION_DEF& destino)
 		m_WlanTel.SetInfoTelegram (teleinfo, m_pWlanMsg);
 		fRes = true;
 		
-		MSGAVISO3 ("ModificarDestino () Agv %d destino %d pos %d",
+		MSGAVISO3 ("ModificarDestino () Agv: %d destino %d pos %d",
 					m_id,
 					destino.nDest,
 					destino.nPos);
@@ -4405,17 +4405,17 @@ bool CAgv::SendBlockTelegram(typ_tele_block tele)
 				fAceptado = true;
 			else
 			{
-				MSGERROR1 ("SendBlockTelegram () : Time out enviando StrQuitum AGV: %d", m_id);
+				MSGERROR1 ("SendBlockTelegram () : Time out enviando StrQuitum Agv: %d", m_id);
 			}
 			break;
 		case WAIT_TIMEOUT:
 			m_Tel.SetTeleTout ();
-			MSGERROR1 ("SendBlockTelegram () : Timeout waiting for Block reply AGV %d", m_id);
+			MSGERROR1 ("SendBlockTelegram () : Timeout waiting for Block reply Agv: %d", m_id);
 			break;
 		default:
 			// XXX mirar posibilidades aquí
 			m_Tel.SetTeleTout ();
-			MSGERROR2 ("SendBlockTelegram () : ReceiveTelegrama ha devuelto: %d AGV: %d", 
+			MSGERROR2 ("SendBlockTelegram () : ReceiveTelegrama ha devuelto: %d Agv: %d", 
 				fRetVal,
 				m_id);
 			break;
@@ -4954,7 +4954,7 @@ void CAgv::CheckStationError(UINT module, UINT error)
 		if (CARGARORD == m_estado  || DESCARGARORD == m_estado)
 		{
 			// Agv in station - error
-			MSGERROR2 ("Agv %d Error %d en Estacion", m_id, error);
+			MSGERROR2 ("Agv: %d Error %d en Estacion", m_id, error);
 			m_uErrorEstacion = error;
 		}
 	}
@@ -4984,7 +4984,7 @@ void CAgv::CheckStationError(UINT module, UINT error)
 		}
 		else
 		{
-			MSGERROR1 ("Error en estación con estado AGV %d erróneo",
+			MSGERROR1 ("Error en estación con estado Agv: %d erróneo",
 				m_id);
 		}
 	}
@@ -5233,7 +5233,7 @@ bool CAgv::ShouldBlock()
 		fStop = TRUE;
 	}
 
-	MSGTRACE2 ("fStop is %s for agv %d", fStop == TRUE ? "TRUE" : "FALSE", m_id);
+	MSGTRACE2 ("fStop is %s for Agv: %d", fStop == TRUE ? "TRUE" : "FALSE", m_id);
 
 
 	return (fStop);
@@ -5278,7 +5278,7 @@ bool CAgv::WlanEnviarCargador(TYPE_STATION_DEF zCargador)
 
 	teleinfo.kommando_1 = BIT7;		// Always 1
 	teleinfo.kommando_2 = BIT7;
-	MSGAVISO2 ("Enviando Agv %d a carga de bateria %d",
+	MSGAVISO2 ("Enviando Agv: %d a carga de bateria %d",
 				m_id,
 				zCargador.nDest);
 
@@ -5436,7 +5436,7 @@ bool CAgv::EnviarCargador()
 				teleinfo.kommando_1 = BIT7;		// Always 1
 
 
-				MSGAVISO2 ("Enviando Agv %d a carga de bateria %d",
+				MSGAVISO2 ("Enviando Agv: %d a carga de bateria %d",
 							m_id,
 							zCargador.nDest);
 
@@ -5450,7 +5450,7 @@ bool CAgv::EnviarCargador()
 	}
 	else
 	{
-		MSGERROR1 ("No hay cargador libre para AGV %d", m_id);
+		MSGERROR1 ("No hay cargador libre para Agv: %d", m_id);
 		fRes = false;
 	}
 	
@@ -5738,7 +5738,7 @@ void CAgv::EmpujarAgvBloqueo(bool desdeAtras)
 			if (ptrAgvBloqueo->m_id != m_id)
 				ptrAgvBloqueo->SetAgvEmpujando (m_id);
 			else
-				MSGERROR1 ("Agv %d empujando el mismo !!!", m_id);
+				MSGERROR1 ("Agv: %d empujando el mismo !!!", m_id);
 			}
 		}
 	}
@@ -5761,7 +5761,7 @@ void CAgv::SetAgvEmpujando(UINT nAgv)
 				; // EmpujarAgvBloqueo (true);
 			}
 			m_nAgvEmpujando = nAgv;	// Poner el Agv que empuja este
-			MSGAVISO2 ("Agv %d empujando Agv %d",
+			MSGAVISO2 ("Agv: %d empujando Agv: %d",
 				nAgv,
 				m_id);
 		}
@@ -6066,7 +6066,7 @@ bool CAgv::OkDestinoDescarga()
 		break;
 	case 5:
 		// Tren / Estación no quiere descarga
-		MSGERROR2 ("Agv %d no descarga en posición %d porque el tren / estación no lo permite",
+		MSGERROR2 ("Agv: %d no descarga en posición %d porque el tren / estación no lo permite",
 			m_id,
 			m_pFzdat->mp);
 		fEnviarRechazo = true;
@@ -6324,7 +6324,7 @@ bool CAgv::OkDestinoCarga()
 		break;
 	case 5:
 		// Tren / Estación no quiere descarga
-		MSGERROR2 ("Agv %d no carga en posición %d porque el tren / estación no lo permite",
+		MSGERROR2 ("Agv: %d no carga en posición %d porque el tren / estación no lo permite",
 			m_id,
 			m_pFzdat->mp);
 		fCancelarOrden = true;
@@ -6564,7 +6564,7 @@ USHORT CAgv::Umleiten(bool &bNCp)
 						&& pCpDistance->GetNCp() != 57 // 57 is no good !!!
 						&& !SetFVAusBlTab(&fzDatCopy, TRUE))
 					{
-						MSGAVISO3("Umleiten para Agv %d mp %d not blocked for nmp %d",
+						MSGAVISO3("Umleiten para Agv: %d mp %d not blocked for nmp %d",
 							m_id,
 							m_pFzdat->mp,
 							pCpDistance->GetNCp());
@@ -6583,7 +6583,7 @@ USHORT CAgv::Umleiten(bool &bNCp)
 	if (nmp == 0)
 	{
 		bNCp = false;
-		MSGAVISO1("Umleiten para Agv %d - no se ha encontrado nmp alternativo (1)",
+		MSGAVISO1("Umleiten para Agv: %d - no se ha encontrado nmp alternativo (1)",
 			m_id);
 
 		// Didnt get an alternative so look at alternatives from the nmp
@@ -6623,7 +6623,7 @@ USHORT CAgv::Umleiten(bool &bNCp)
 						&& pCpDistance->GetNCp() != 57 // 57 is no good !!!
 						&& !SetFVAusBlTab(&fzDatCopy, TRUE))
 					{
-						MSGAVISO3("Umleiten para Agv %d mp %d not blocked for nmp (uemp) %d",
+						MSGAVISO3("Umleiten para Agv: %d mp %d not blocked for nmp (uemp) %d",
 							m_id,
 							m_pFzdat->mp,
 							pCpDistance->GetNCp()
@@ -6643,7 +6643,7 @@ USHORT CAgv::Umleiten(bool &bNCp)
 
 	if (nmp == 0)
 	{
-		MSGAVISO1("Umleiten para Agv %d - no se ha encontrado nmp alternativo (2)",
+		MSGAVISO1("Umleiten para Agv: %d - no se ha encontrado nmp alternativo (2)",
 			m_id);
 	}
 	else
@@ -6718,7 +6718,7 @@ bool CAgv::SendUmleitTelegram(UINT nmp)
 			break;
 		case WAIT_TIMEOUT:
 			m_Tel.SetTeleTout ();
-			MSGTRACE1 ("Timeout waiting for SendUmleitTelegram reply AGV %d", m_id);
+			MSGTRACE1 ("Timeout waiting for SendUmleitTelegram reply Agv: %d", m_id);
 			break;
 		default:
 			// XXX mirar posibilidades aquí
@@ -7248,7 +7248,7 @@ bool CAgv::EnviarMantenimiento()
 		teleinfo.kommando_1 = BIT7;		// Always 1
 
 
-		MSGAVISO2 ("Enviando Agv %d a mantenimiento en pos %d",
+		MSGAVISO2 ("Enviando Agv: %d a mantenimiento en pos %d",
 					m_id,
 					zMantenimiento.nDest);
 
@@ -7522,7 +7522,7 @@ bool CAgv::SendWegTelegram()
 			break;
 		case WAIT_TIMEOUT:
 			m_Tel.SetTeleTout ();
-			strTrace.Format ("Timeout waiting for Weg reply AGV %d", m_id);
+			strTrace.Format ("Timeout waiting for Weg reply Agv: %d", m_id);
 			MSGTRACE (strTrace);
 			break;
 		default:
@@ -7670,7 +7670,7 @@ bool CAgv::IsBlockingDistanceTravelled()
 	//USHORT nBlockWayCut = (nBlockWay < 2900) ? 0 : (nBlockWay - 2900);	// - 100 por si para antes...
 	USHORT nBlockWayCut = (nBlockWay < 500) ? 0 : (nBlockWay - 500);	
 	
-	MSGTRACE5 ("IsBlockingDistanceTravelled(): agv %d, mp = %d, nmp = %d, blockway = %d nBlockWayCut = %d",
+	MSGTRACE5 ("IsBlockingDistanceTravelled(): Agv: %d, mp = %d, nmp = %d, blockway = %d nBlockWayCut = %d",
 		m_id,
 		m_pFzdat->mp,
 		m_pFzdat->nmp,
