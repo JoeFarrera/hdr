@@ -1737,10 +1737,9 @@ bool CAgv::PickupOrden()
 		teleinfo.kommando_0 |= BIT7;	// Always 1
 
 		// Michael 30.10.2001 But why always blocked ???
-		SetBlocked (true);
-		// M2015 9.05.2015 TODO - seems not to set this
-		// M2015 10.05.2015 m_fWasBlocked = true;
-		// M2015 fin
+		
+		// Michael 25.05.2015 Don't interfere with current state of Agv SetBlocked (true);
+
 		SET_CTRL_STOP(*m_pFzdat);
 		SET_AKTION_SPERR(*m_pFzdat);	// Action stopped (Don't load)
 
@@ -2124,7 +2123,7 @@ bool CAgv::SetUnloadDestination()
 
 		// Michael 01.10.2001: Set Agv blocked initially ?
 
-		SetBlocked (true);
+		// Michael 25.05.2015 Don't block here SetBlocked (true);
 		
 		SET_CTRL_STOP(*m_pFzdat);
 		SET_AKTION_SPERR(*m_pFzdat);	// Action stopped (Don't load)
@@ -3392,6 +3391,16 @@ bool CAgv::InterpretarTeleGrosseStatus(typ_tele_gs_wlan &tele)
 	return (fUpdateEstado);
 
 }
+// Increment number of errors that AGV may have
+// Note: If number exceeded, the next error in will overwrite the last
+void CAgv::IncrementErrorNumber() {
+	if (m_numError >= 4)
+	{
+		MSGERROR1 ("Número Errores excedido para Agv: %d", m_id);
+	}
+	else 
+		m_numError++;
+}
 
 void CAgv::InterpretarTeleErrorWlan(typ_tele_error_wlan &tele)
 {
@@ -3399,6 +3408,8 @@ void CAgv::InterpretarTeleErrorWlan(typ_tele_error_wlan &tele)
 	unsigned short modul_nr = FZ_MOD_OFFSET + GetAtoi ((LPCTSTR)tele.modul_nr, sizeof(tele.modul_nr));
 
 	MSGAVISO3 ("InterpretarTeleErrorWlan()->agv: %d fehler_nr: %d , modul_nr: %d", m_id, fehler_nr, modul_nr);
+
+	// M2015: TODO Seems that Wlan Agv sends the same error repeatedly: Look at dealing with this situation
 
 	m_pFzdat->errofz[m_numError].fehler_nr = fehler_nr;
 	m_pFzdat->errofz[m_numError].modul_nr = modul_nr;
@@ -3433,7 +3444,7 @@ void CAgv::InterpretarTeleErrorWlan(typ_tele_error_wlan &tele)
 
 	CheckStationError (m_pFzdat->errofz[m_numError].modul_nr, m_pFzdat->errofz[m_numError].fehler_nr);
 	
-	m_numError++;
+	IncrementErrorNumber();
 
 	SET_FZ_FEHLER(*m_pFzdat);
 
@@ -3527,7 +3538,7 @@ bool CAgv::InterpretarTeleError(typ_tele_error &tele)
 	{
         if ((teleLen - 1) > 6 +  i * sizeof(tele.error[0]))
         {
-			m_numError ++;
+			IncrementErrorNumber();
 			// sys.meld_nr =
 			m_pFzdat->errofz[i].fehler_nr = GetAtoi ((LPCTSTR)tele.error[i].fehler_nr,
 				sizeof(tele.error[0].fehler_nr));
@@ -3838,8 +3849,8 @@ bool CAgv::WlanEnviarPuntoEspera (UINT curMp)
 			teleinfo.kommando_0 |= BIT7;	// Always 1
 
 			// Enviar bloqueado siempre 12.10.2001
-			SetBlocked (true);
-			SetTeleBlocked (&teleinfo.kommando_0, true);
+			// Michael 25.05.2015 don't interfere just incase SetBlocked (true);
+			SetTeleBlockedWlan (&teleinfo.kommando_0, true);
 
 			// teleinfo.kommando_0 |= BIT3;	// Action stopped (Don't load)
 
@@ -3967,8 +3978,9 @@ void CAgv::SetCancelled()
 // Comprobar que el destino del AGV es el mismo que la orden...
 bool CAgv::DestinoDiferente(TEstadoAGV estado)
 {
-
 	CDestination * pDestOrden;
+
+
 
 	if (m_pOrden && 'S' == m_pOrden->m_at.herkunft)
 		// Orden Manual
@@ -4015,6 +4027,15 @@ bool CAgv::DestinoDiferente(TEstadoAGV estado)
 				m_id, m_pFzdat->fzziel.nDest, 
 				pDestOrden->m_pDest->nDest);
 		}
+
+		// M2015 Si el AGV tiene error, no comprobar destino diferente
+
+		if (TEST_FZ_FEHLER(*m_pFzdat))
+		{
+			MSGERROR2 ("DestinoDiferente Agv: %d Estado: %s no tratado por AGV con error", m_id, GetStringEstado());
+			return (!fRetVal);
+		}
+
 		// Michael 10.11.2004 Si no tiene destino, hay que darle uno
 		// if (IsModifiableDestino ())
 		if (IsModifiableDestino () || m_pFzdat->fzziel.nDest == 0)
@@ -4134,7 +4155,7 @@ bool CAgv::ModificarDestino(TYPE_STATION_DEF& destino)
 		teleinfo.kommando_0 |= BIT7;	// Always 1
 
 		// Michael 30.10.2001 But why always blocked ???
-		SetBlocked (true);
+		// Michael 25.05.2015 not here: SetBlocked (true);
 		SET_CTRL_STOP(*m_pFzdat);
 		SET_AKTION_SPERR(*m_pFzdat);	// Action stopped (Don't load)
 
@@ -4303,7 +4324,7 @@ bool CAgv::WlanSetDestinoManual()
 
 	teleinfo.kommando_0 = 0;
 	// Michael 12.10.2001 Set Blocked
-	SetBlocked (true);
+	// Michael 25.05.2015 Don't SetBlocked (true);
 	// SetTeleBlocked (&teleinfo.kommando_0, true);
 	teleinfo.kommando_0 &= OFFBIT1;
 
@@ -5174,7 +5195,6 @@ UINT CAgv::IsKnot()
 }
 
 
-// TODO: Revise as new agvs only one bit for block
 void CAgv::SetTeleBlocked(UCHAR *kommand, bool fBlock)
 {
 	if (fBlock)
@@ -5191,6 +5211,22 @@ void CAgv::SetTeleBlocked(UCHAR *kommand, bool fBlock)
 
 
 }
+
+void CAgv::SetTeleBlockedWlan(UCHAR *kommand, bool fBlock)
+{
+	if (fBlock)
+	{
+		*kommand &= OFFBIT1;	// Agv blocked
+	}
+	else
+	{
+		// Ver si estaba bloqueado
+		*kommand |= BIT1;	// Agv not blocked
+	}
+
+
+}
+
 
 
 // Determinar si se debe bloquear o no el AGV
@@ -5271,8 +5307,8 @@ bool CAgv::WlanEnviarCargador(TYPE_STATION_DEF zCargador)
 	teleinfo.kommando_0 |= BIT7;	// Always 1
 
 	// Enviar bloqueado siempre 12.10.2001
-	SetBlocked (true);
-	SetTeleBlocked (&teleinfo.kommando_0, true);
+	// Michael 25.05.2015 SetBlocked (true);
+	SetTeleBlockedWlan (&teleinfo.kommando_0, true);
 
 	// teleinfo.kommando_0 |= BIT3;	// Action stopped (Don't load)
 
@@ -5691,7 +5727,7 @@ bool CAgv::CheckTeleAgv(char *idTele)
 			pszbuf,
 			m_id);
 		// Michael 11.11.2001 SetBlocked por si acaso
-		SetBlocked (true);
+		SetBlocked (true);	// TODO - what use would this have? Michael 25.05.2015
 		fRetVal = false;
 	}
 	else
@@ -7187,6 +7223,7 @@ bool CAgv::SEnviarMantenimiento()
 /*
  * Si el AGV debe ir a mantenimiento, intenta encaminarlo
  * Michael 14.06.2005 T5K
+ * M2015 TODO: No contempla AGV Wlan
  */
 bool CAgv::EnviarMantenimiento()
 {
@@ -7745,7 +7782,10 @@ bool CAgv::IsDistanceToRequestWegTele()
 {
 	ULONG lMyKey = m_pFzdat->mp*10000 + m_pFzdat->nmp;
 	CDistanceReqWayTele myCDRWT;	//(1,m_pFzdat->mp,m_pFzdat->nmp);
-	return (m_pmapDistancesReqWayTele->Lookup(lMyKey,myCDRWT) == TRUE);
+	bool bWegDistance = m_pmapDistancesReqWayTele->Lookup(lMyKey,myCDRWT) == TRUE;
+	MSGTRACE4 ("IsDistanceToRequestWegTele() Agv: %d mp: %d nmp: %d bWegDistance: %s", 
+		m_id, m_pFzdat->mp, m_pFzdat->nmp, bWegDistance ? "true" : "false");
+	return (bWegDistance);
 }
 
 /*
@@ -8026,18 +8066,15 @@ void CAgv::ProcessMessages() {
 				if (CheckTeleAgv((char*)tele_gs.tele_kopf.fznr) && CheckTeleE_Check(strMsg))
 				{
 					m_WlanTel.SendQuitum(m_pWlanMsg);
-					//CSingleLock pollLock (&g_Container.m_csPoll);
-					//
-					//MSGTRACE1("PollLock for Agv: %d", m_id);
-					//pollLock.Lock();
 					m_fWlanUpdateEstado = InterpretarTeleGrosseStatus (tele_gs);
-					updateEstadoGrossStatus (m_fWlanUpdateEstado);
-					// M2015 10.05.2015 testing
-					UpdateEstado();
-					// M2015 10.05.2015 fin
-					MaybeUnblockDrive();
-					//pollLock.Unlock();
-					//MSGTRACE1("PollLock unlock for Agv: %d", m_id);
+					if (IsBlocked())
+					{
+						// Update status only if Agv is blocked - otherwise will be sending messages
+						// when not required
+						updateEstadoGrossStatus (m_fWlanUpdateEstado);
+						UpdateEstado();
+						MaybeUnblockDrive();
+					}
 
 
 					fUpdateBuB = true;
@@ -8116,12 +8153,12 @@ void CAgv::ProcessMessages() {
 					MaybeSendQuittum();
 					ResetWlanUpdateEstado();
 				}
+				UpdateEstado();
+				MaybeUnblockDrive();
 			}
 			else
 				WlanMaybeRequestWegDistance();
 
-			UpdateEstado();
-			MaybeUnblockDrive();
 		}
 
 	}

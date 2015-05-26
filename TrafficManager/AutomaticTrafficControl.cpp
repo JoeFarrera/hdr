@@ -1375,7 +1375,7 @@ void CAutomaticTrafficControl::GenerateListDistancesReqWayTele(CDistanceReqWayTe
 		pCp = pCourseAGVType->GetPtrCommPointByIndex(nCpCount);
 		nDistIndex = pCp->GetDistanceIndex();
 		nDistances = pCp->GetNCps();
-		nMyCp = nCpCount;
+		nMyCp = pCp->GetCp();
 		for (int nDistCount = 0;
 			nDistCount < nDistances;
 			nDistCount++)

@@ -129,6 +129,7 @@ public:
 
 
 private:
+	void IncrementErrorNumber(void);
 	bool GetIPForWakeup (CString& wakeupIp);
 	bool WlanEnviarCargador(TYPE_STATION_DEF zCargador);
 	bool SMaybeInStationWlan ();
@@ -193,6 +194,7 @@ private:
 	bool EnviarCargador();
 	bool ShouldBlock();
 	void SetTeleBlocked (UCHAR * kommand, bool fBlock);
+	void SetTeleBlockedWlan (UCHAR * kommand, bool fBlock);
 	UINT IsKnot();
 	//bool IsDriveForbiddenByBuB () { return (1 == m_pFzdat->FVvonBedienung ? true : false);}; //Xavi, 02/11/05
 	bool BlockForKnotNumber();
